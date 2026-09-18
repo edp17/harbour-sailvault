@@ -13,7 +13,7 @@ CBINDGEN_BIN="${CBINDGEN_ROOT}/bin/cbindgen"
 CBINDGEN_TARGET_DIR="${ROOT}/.sailvault-cbindgen-target"
 
 echo "================================================"
-echo " SailVault M1r17 · native Sailfish Rust build"
+echo " SailVault M2r2 · native Sailfish Rust build"
 echo "================================================"
 echo
 

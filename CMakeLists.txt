@@ -8,6 +8,7 @@ find_package(Qt5 REQUIRED COMPONENTS Core Gui Qml Quick)
 find_package(Threads REQUIRED)
 include(FindPkgConfig)
 pkg_search_module(SAILFISH sailfishapp REQUIRED)
+pkg_search_module(SAILFISHSECRETS sailfishsecrets REQUIRED)
 
 set(WALLET_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vendor/wallet-core")
 set(WALLET_CORE_RUST_LIB "${WALLET_CORE_DIR}/rust/target/release/libwallet_core_rs.a")
@@ -73,6 +74,8 @@ add_executable(harbour-sailvault
     src/main.cpp
     src/walletcoreprobe.cpp
     src/walletcoreprobe.h
+    src/secretsprobe.cpp
+    src/secretsprobe.h
 )
 
 target_compile_definitions(harbour-sailvault PRIVATE
@@ -81,6 +84,7 @@ target_compile_definitions(harbour-sailvault PRIVATE
 
 target_include_directories(harbour-sailvault PRIVATE
     ${SAILFISH_INCLUDE_DIRS}
+    ${SAILFISHSECRETS_INCLUDE_DIRS}
 )
 
 target_link_libraries(harbour-sailvault PRIVATE
@@ -89,6 +93,7 @@ target_link_libraries(harbour-sailvault PRIVATE
     Qt5::Qml
     Qt5::Quick
     ${SAILFISH_LDFLAGS}
+    ${SAILFISHSECRETS_LDFLAGS}
     TrustWalletCore
 )
 

@@ -103,6 +103,11 @@ bool WalletCoreProbe::allPassed() const
     return m_allPassed;
 }
 
+int WalletCoreProbe::runCount() const
+{
+    return m_runCount;
+}
+
 void WalletCoreProbe::addResult(const QString &name,
                                 bool passed,
                                 const QString &detail,
@@ -118,13 +123,15 @@ void WalletCoreProbe::addResult(const QString &name,
 
 void WalletCoreProbe::run()
 {
+    ++m_runCount;
     m_results.clear();
     m_allPassed = false;
 
-    m_buildInfo = QStringLiteral("Wallet Core %1 · %2 · %3-bit")
+    m_buildInfo = QStringLiteral("Wallet Core %1 · %2 · %3-bit · self-check run #%4")
             .arg(QStringLiteral(SAILVAULT_WALLET_CORE_VERSION),
                  QSysInfo::currentCpuArchitecture())
-            .arg(QSysInfo::WordSize);
+            .arg(QSysInfo::WordSize)
+            .arg(m_runCount);
 
     TWStringGuard mnemonic(TWStringCreateWithUTF8Bytes(kTestMnemonic));
     TWStringGuard passphrase(TWStringCreateWithUTF8Bytes(""));

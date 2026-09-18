@@ -9,4 +9,4 @@ Comment=Native multi-chain wallet for Sailfish OS
 [X-Sailjail]
 OrganizationName=org.edp17
 ApplicationName=SailVault
-Permissions=
+Permissions=Secrets

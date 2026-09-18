@@ -11,6 +11,7 @@ class WalletCoreProbe : public QObject
     Q_PROPERTY(QString summary READ summary NOTIFY resultsChanged)
     Q_PROPERTY(QString buildInfo READ buildInfo NOTIFY resultsChanged)
     Q_PROPERTY(bool allPassed READ allPassed NOTIFY resultsChanged)
+    Q_PROPERTY(int runCount READ runCount NOTIFY resultsChanged)
 
 public:
     explicit WalletCoreProbe(QObject *parent = nullptr);
@@ -19,6 +20,7 @@ public:
     QString summary() const;
     QString buildInfo() const;
     bool allPassed() const;
+    int runCount() const;
 
     Q_INVOKABLE void run();
 
@@ -35,4 +37,5 @@ private:
     QString m_summary;
     QString m_buildInfo;
     bool m_allPassed = false;
+    int m_runCount = 0;
 };

@@ -1,43 +1,54 @@
-# SailVault — Milestone 1 revision 17
+# SailVault — Milestone 2 revision 2
 
 **Package:** `harbour-sailvault`  
-**Version:** `0.1.0-17`  
+**Version:** `0.2.0-2`  
 **Wallet Core compatibility baseline:** `4.0.27`
 
-## r16 result
+M1 is complete and remains unchanged: Wallet Core compiles, links and runs
+natively on Sailfish OS aarch64 and passes deterministic Ethereum, Bitcoin
+BIP84 and secp256k1 checks.
 
-r16 successfully compiled and linked the complete SailVault executable and
-installed on the Xperia 10 III.
+## M2r2
 
-At runtime the application showed a white screen because the root QML file
-instantiated `MainPage` without importing the local `qml/pages` directory:
+M2r1 introduced the C++ Sailfish Secrets storage probe, but device testing
+exposed an SQLCipher backend naming restriction:
 
-`MainPage is not a type`
+`SQLCipher plugin only supports collection names with alphanumeric Latin-1 characters`
 
-## r17 fix
+The M2r1 collection identifier was:
 
-`qml/harbour-sailvault.qml` now includes:
+`harbour-sailvault`
 
-```qml
-import "pages"
+The hyphen is invalid for this backend.
+
+M2r2 changes only the secure collection identifier to:
+
+`harboursailvault`
+
+The identifier is deliberately punctuation-free and should remain so.
+
+The storage model is otherwise unchanged:
+
+- Sailfish Secrets default encrypted storage;
+- owner-only collection;
+- device-lock protection;
+- public BIP39 test vector only;
+- recovery material remains in C++ and is never exposed to QML.
+
+## Test sequence
+
+1. Store public test secret.
+2. Close SailVault completely.
+3. Reopen SailVault.
+4. Verify stored test secret.
+5. Delete public test secret.
+6. Verify again; the app should report that no M2 test secret is stored.
+
+Never use a real recovery phrase in this development build.
+
+## Build
+
+```sh
+cd ~/mer/android/droid
+rpm/dhd/helpers/build_packages.sh -o -b hybris/mw/harbour-sailvault -s rpm/harbour-sailvault.spec
 ```
-
-No Wallet Core, Rust, protobuf, cbindgen, signing, derivation, CMake link-order,
-or GNU compatibility code has been changed from the successful r16 build.
-
-## Expected M1 test
-
-Launching the app should run the deterministic offline self-test and show:
-
-- Ethereum:
-  `0x9858EfFD232B4033E47d90003D41EC34EcaEda94`
-- Bitcoin BIP84:
-  `bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu`
-- secp256k1 fixed-digest signature verification
-- final result:
-  `PASS · Wallet Core works on this Sailfish build`
-
-Never use a real recovery phrase during Milestone 1.
-
-Wallet Core 4.0.27 remains a Sailfish compatibility baseline only, not the
-intended real-funds production version.
