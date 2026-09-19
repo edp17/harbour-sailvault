@@ -15,7 +15,7 @@ CoverBackground {
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Milestone 1"
+            text: "Milestone 3"
             color: Theme.secondaryColor
             font.pixelSize: Theme.fontSizeSmall
         }
@@ -23,7 +23,7 @@ CoverBackground {
         Label {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: "Wallet Core\nport probe"
+            text: "Secure wallet\nlifecycle"
             color: Theme.highlightColor
             wrapMode: Text.Wrap
         }

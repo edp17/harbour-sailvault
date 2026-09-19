@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WC="${ROOT}/vendor/wallet-core"
 
-echo "SailVault Milestone 2 r2 preflight"
+echo "SailVault Milestone 3 r1 preflight"
 echo "=================================="
 
 for tool in rustc cargo cc c++; do

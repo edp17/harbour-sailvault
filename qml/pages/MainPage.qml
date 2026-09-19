@@ -5,13 +5,14 @@ import org.sailfishos.sailvault 1.0
 Page {
     id: page
 
+    WalletVault {
+        id: vault
+        Component.onCompleted: refreshStatus()
+    }
+
     WalletCoreProbe {
         id: probe
         Component.onCompleted: run()
-    }
-
-    SecretsProbe {
-        id: secretsProbe
     }
 
     SilicaFlickable {
@@ -27,7 +28,138 @@ Page {
 
             PageHeader {
                 title: "SailVault"
-                description: "Milestone 2 · secure wallet storage plumbing"
+                description: "Milestone 3 · secure wallet lifecycle"
+            }
+
+            SectionHeader {
+                text: "Secure demo wallet"
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: vault.status
+                color: vault.lastOperationPassed
+                       ? Theme.highlightColor : Theme.primaryColor
+                font.pixelSize: Theme.fontSizeLarge
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: vault.detail
+                color: Theme.secondaryColor
+                font.pixelSize: Theme.fontSizeSmall
+                wrapMode: Text.Wrap
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "Secrets backend: "
+                      + (vault.backendReady ? "ready" : "not ready")
+                      + " · stored wallet: "
+                      + (vault.storageKnown
+                         ? (vault.walletStored ? "yes" : "no")
+                         : "unknown / locked")
+                      + " · session loaded: "
+                      + (vault.walletLoaded ? "yes" : "no")
+                color: Theme.secondaryHighlightColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                wrapMode: Text.Wrap
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Create secure demo wallet"
+                onClicked: vault.createDemoWallet()
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Load stored wallet"
+                onClicked: vault.loadStoredWallet()
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                enabled: vault.walletLoaded
+                text: "Clear wallet session"
+                onClicked: vault.clearSession()
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Delete secure demo wallet"
+                onClicked: vault.deleteDemoWallet()
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: "Refresh secure storage status"
+                onClicked: vault.refreshStatus()
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "Wallet lifecycle operations completed: " + vault.operationCount
+                color: Theme.secondaryColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            Column {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                spacing: Theme.paddingSmall
+                visible: vault.walletLoaded
+
+                Label {
+                    width: parent.width
+                    text: "Ethereum"
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeMedium
+                }
+
+                Label {
+                    width: parent.width
+                    text: vault.ethereumAddress
+                    color: Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeSmall
+                    wrapMode: Text.WrapAnywhere
+                }
+
+                Label {
+                    width: parent.width
+                    text: "Bitcoin · BIP84"
+                    color: Theme.highlightColor
+                    font.pixelSize: Theme.fontSizeMedium
+                }
+
+                Label {
+                    width: parent.width
+                    text: vault.bitcoinAddress
+                    color: Theme.primaryColor
+                    font.pixelSize: Theme.fontSizeSmall
+                    wrapMode: Text.WrapAnywhere
+                }
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: "Persistence test: create the demo wallet, close SailVault, "
+                      + "open it again, then tap “Load stored wallet”. "
+                      + "The two deterministic addresses should reappear."
+                color: Theme.secondaryColor
+                font.pixelSize: Theme.fontSizeExtraSmall
+                wrapMode: Text.Wrap
+            }
+
+            SectionHeader {
+                text: "Wallet Core diagnostics"
             }
 
             Label {
@@ -35,7 +167,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: probe.summary.length ? probe.summary : "Running self-test…"
                 color: probe.allPassed ? Theme.highlightColor : Theme.primaryColor
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: Theme.fontSizeMedium
                 wrapMode: Text.Wrap
             }
 
@@ -44,12 +176,8 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: probe.buildInfo
                 color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Theme.fontSizeExtraSmall
                 wrapMode: Text.Wrap
-            }
-
-            SectionHeader {
-                text: "Deterministic offline checks"
             }
 
             Repeater {
@@ -57,7 +185,7 @@ Page {
 
                 delegate: Item {
                     width: content.width
-                    height: resultColumn.height + Theme.paddingMedium
+                    height: resultColumn.height + Theme.paddingSmall
 
                     Column {
                         id: resultColumn
@@ -67,9 +195,11 @@ Page {
 
                         Label {
                             width: parent.width
-                            text: (modelData.passed ? "✓ PASS · " : "✗ FAIL · ") + modelData.name
-                            color: modelData.passed ? Theme.highlightColor : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            text: (modelData.passed ? "✓ PASS · " : "✗ FAIL · ")
+                                  + modelData.name
+                            color: modelData.passed
+                                   ? Theme.highlightColor : Theme.primaryColor
+                            font.pixelSize: Theme.fontSizeSmall
                             wrapMode: Text.Wrap
                         }
 
@@ -77,15 +207,6 @@ Page {
                             width: parent.width
                             text: modelData.detail
                             color: Theme.secondaryColor
-                            font.pixelSize: Theme.fontSizeSmall
-                            wrapMode: Text.WrapAnywhere
-                        }
-
-                        Label {
-                            width: parent.width
-                            visible: modelData.expected && modelData.expected.length > 0
-                            text: "Expected: " + modelData.expected
-                            color: Theme.secondaryHighlightColor
                             font.pixelSize: Theme.fontSizeExtraSmall
                             wrapMode: Text.WrapAnywhere
                         }
@@ -95,79 +216,17 @@ Page {
 
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
-                text: "Run Wallet Core self-test again"
+                text: "Run Wallet Core diagnostics again"
                 onClicked: probe.run()
             }
 
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Wallet Core reruns completed: " + probe.runCount
+                text: "Wallet Core diagnostic runs: " + probe.runCount
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeExtraSmall
                 horizontalAlignment: Text.AlignHCenter
-            }
-
-            SectionHeader {
-                text: "Sailfish Secrets · test-only"
-            }
-
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: secretsProbe.status
-                color: secretsProbe.lastOperationPassed
-                       ? Theme.highlightColor : Theme.primaryColor
-                font.pixelSize: Theme.fontSizeMedium
-                wrapMode: Text.Wrap
-            }
-
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: secretsProbe.detail
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeSmall
-                wrapMode: Text.Wrap
-            }
-
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Secrets operations completed: " + secretsProbe.operationCount
-                      + " · test secret present: "
-                      + (secretsProbe.testSecretPresent ? "yes" : "no")
-                color: Theme.secondaryHighlightColor
-                font.pixelSize: Theme.fontSizeExtraSmall
-                wrapMode: Text.Wrap
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Store public test secret"
-                onClicked: secretsProbe.storeTestSecret()
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Verify stored test secret"
-                onClicked: secretsProbe.verifyTestSecret()
-            }
-
-            Button {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "Delete public test secret"
-                onClicked: secretsProbe.deleteTestSecret()
-            }
-
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Persistence test: store the test secret, close SailVault, "
-                      + "open it again, then tap “Verify stored test secret”."
-                color: Theme.secondaryColor
-                font.pixelSize: Theme.fontSizeExtraSmall
-                wrapMode: Text.Wrap
             }
 
             SectionHeader {
@@ -177,10 +236,10 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Milestone 2 is still a development probe, not a usable wallet. "
-                      + "The Secrets test stores only the public “abandon … about” test mnemonic. "
-                      + "The recovery text remains in C++ and is never exposed to QML. "
-                      + "Do not import a real recovery phrase and do not send funds to addresses shown by this build."
+                text: "Milestone 3 still uses only the public BIP39 test wallet. "
+                      + "The recovery material is compiled into this development build only for deterministic testing, "
+                      + "stored/retrieved entirely in C++, and never exposed to QML. "
+                      + "Do not enter a real recovery phrase and do not send funds to these addresses."
                 color: Theme.secondaryColor
                 wrapMode: Text.Wrap
             }

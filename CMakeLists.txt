@@ -74,8 +74,8 @@ add_executable(harbour-sailvault
     src/main.cpp
     src/walletcoreprobe.cpp
     src/walletcoreprobe.h
-    src/secretsprobe.cpp
-    src/secretsprobe.h
+    src/walletvault.cpp
+    src/walletvault.h
 )
 
 target_compile_definitions(harbour-sailvault PRIVATE

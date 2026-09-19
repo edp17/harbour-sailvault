@@ -1,7 +1,7 @@
 Name:       harbour-sailvault
 Summary:    Native multi-chain wallet for Sailfish OS
-Version:    0.2.0
-Release:    2
+Version:    0.3.0
+Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
 URL:        https://github.com/edp17/harbour-sailvault
@@ -26,15 +26,15 @@ BuildRequires:  unzip
 
 %description
 SailVault is a native multi-chain wallet project for Sailfish OS.
-Milestone 2 keeps the proven Wallet Core port and begins secure wallet
-storage integration using Sailfish Secrets. It is not yet a usable wallet.
+Milestone 3 integrates Sailfish Secrets with Wallet Core to prove a secure
+wallet create/load/derive/sign/delete lifecycle. It is not yet a usable wallet.
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
-# M2r2 preserves the M2r1 implementation and fixes the Sailfish Secrets
-# SQLCipher collection identifier to use alphanumeric characters only.
+# M3r1 keeps the proven Wallet Core build recipe and integrates the
+# application wallet lifecycle with a dedicated relocking Sailfish Secrets collection.
 ./scripts/build-wallet-core-rust-sb2.sh
 
 %cmake \

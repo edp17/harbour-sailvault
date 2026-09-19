@@ -1,52 +1,115 @@
-# SailVault — Milestone 2 revision 2
+# SailVault — Milestone 3 revision 1
 
 **Package:** `harbour-sailvault`  
-**Version:** `0.2.0-2`  
+**Version:** `0.3.0-1`  
 **Wallet Core compatibility baseline:** `4.0.27`
 
-M1 is complete and remains unchanged: Wallet Core compiles, links and runs
-natively on Sailfish OS aarch64 and passes deterministic Ethereum, Bitcoin
-BIP84 and secp256k1 checks.
+M1 proved Wallet Core can compile, link and run natively on Sailfish OS aarch64.
+M2 proved Sailfish Secrets encrypted persistence works from the native C++ layer.
 
-## M2r2
+## M3 goal
 
-M2r1 introduced the C++ Sailfish Secrets storage probe, but device testing
-exposed an SQLCipher backend naming restriction:
+M3 joins those two pieces into the first real wallet lifecycle layer.
 
-`SQLCipher plugin only supports collection names with alphanumeric Latin-1 characters`
+It still uses only the public BIP39 test vector:
 
-The M2r1 collection identifier was:
+`abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
 
-`harbour-sailvault`
+No real recovery phrase should be used.
 
-The hyphen is invalid for this backend.
+## M3r1 lifecycle
 
-M2r2 changes only the secure collection identifier to:
+### Create secure demo wallet
 
-`harboursailvault`
+The C++ wallet layer validates the public test mnemonic with Wallet Core,
+creates a dedicated Sailfish Secrets collection, stores the mnemonic, reads it
+back, derives the expected Ethereum and Bitcoin BIP84 addresses, and performs
+an internal secp256k1 sign/verify test.
 
-The identifier is deliberately punctuation-free and should remain so.
+### Stronger wallet collection
 
-The storage model is otherwise unchanged:
+M3 does not reuse the M2 probe collection.
 
-- Sailfish Secrets default encrypted storage;
-- owner-only collection;
-- device-lock protection;
-- public BIP39 test vector only;
-- recovery material remains in C++ and is never exposed to QML.
+Collection:
 
-## Test sequence
+`sailvaultwalletv1`
 
-1. Store public test secret.
-2. Close SailVault completely.
-3. Reopen SailVault.
-4. Verify stored test secret.
-5. Delete public test secret.
-6. Verify again; the app should report that no M2 test secret is stored.
+Secret:
 
-Never use a real recovery phrase in this development build.
+`mnemonicv1`
+
+The collection is:
+
+- stored with Sailfish Secrets' default encrypted storage plugin;
+- owner-only;
+- protected by the device lock;
+- configured with `DeviceLockRelock`, so it relocks when the device locks and
+  subsequent access is system-authentication mediated.
+
+The collection name is deliberately alphanumeric to satisfy the SQLCipher
+backend restriction discovered during M2 testing.
+
+### Load stored wallet
+
+The recovery bytes are fetched in C++, passed directly to Wallet Core, and used
+to derive:
+
+Ethereum:
+
+`0x9858EfFD232B4033E47d90003D41EC34EcaEda94`
+
+Bitcoin BIP84:
+
+`bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu`
+
+Wallet Core also performs a fixed-digest secp256k1 signing verification.
+
+Only the public addresses and status information are exposed to QML. Recovery
+material never crosses the C++/QML boundary.
+
+After use, SailVault explicitly overwrites its temporary `QByteArray`
+containing the recovered mnemonic before releasing it.
+
+### Clear session
+
+Clears the public derived addresses from application state without deleting
+the encrypted wallet.
+
+### Delete demo wallet
+
+Deletes the dedicated Sailfish Secrets collection, including the stored
+recovery material.
+
+## Device test sequence
+
+1. Confirm the Wallet Core diagnostic checks still pass.
+2. Tap **Create secure demo wallet**.
+3. Confirm both expected addresses are shown.
+4. Close SailVault completely.
+5. Reopen it.
+6. Tap **Load stored wallet**.
+7. Confirm the same Ethereum and Bitcoin addresses reappear.
+8. Tap **Clear wallet session**; addresses should disappear but storage should remain.
+9. Tap **Load stored wallet** again; addresses should return.
+10. Tap **Delete secure demo wallet**.
+11. Confirm storage reports no wallet.
+12. Try **Load stored wallet**; it should report that no wallet is stored.
+
+Locking the phone between steps 3 and 6 is also useful: M3 uses
+`DeviceLockRelock`, so Sailfish may request system-mediated authentication when
+the wallet is accessed again.
+
+## Security status
+
+This is still a development harness, not a real-funds wallet.
+
+Wallet Core 4.0.27 is only the Sailfish compatibility baseline. Before any
+real-funds beta, move to a maintained Wallet Core version or carefully review
+and backport relevant security fixes.
 
 ## Build
+
+No manual bootstrap is required:
 
 ```sh
 cd ~/mer/android/droid

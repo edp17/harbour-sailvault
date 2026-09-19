@@ -6,7 +6,7 @@
 #include <sailfishapp.h>
 
 #include "walletcoreprobe.h"
-#include "secretsprobe.h"
+#include "walletvault.h"
 
 int main(int argc, char *argv[])
 {
@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
 
     qmlRegisterType<WalletCoreProbe>(
         "org.sailfishos.sailvault", 1, 0, "WalletCoreProbe");
-    qmlRegisterType<SecretsProbe>(
-        "org.sailfishos.sailvault", 1, 0, "SecretsProbe");
+    qmlRegisterType<WalletVault>(
+        "org.sailfishos.sailvault", 1, 0, "WalletVault");
 
     QScopedPointer<QQuickView> view(SailfishApp::createView());
     view->setSource(SailfishApp::pathToMainQml());
