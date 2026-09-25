@@ -10,6 +10,7 @@ class WalletVault : public QObject
     Q_OBJECT
     Q_PROPERTY(bool backendReady READ backendReady NOTIFY stateChanged)
     Q_PROPERTY(bool storageKnown READ storageKnown NOTIFY stateChanged)
+    Q_PROPERTY(bool storageProtected READ storageProtected NOTIFY stateChanged)
     Q_PROPERTY(bool walletStored READ walletStored NOTIFY stateChanged)
     Q_PROPERTY(bool walletLoaded READ walletLoaded NOTIFY stateChanged)
     Q_PROPERTY(bool lastOperationPassed READ lastOperationPassed NOTIFY stateChanged)
@@ -17,13 +18,16 @@ class WalletVault : public QObject
     Q_PROPERTY(QString detail READ detail NOTIFY stateChanged)
     Q_PROPERTY(QString ethereumAddress READ ethereumAddress NOTIFY stateChanged)
     Q_PROPERTY(QString bitcoinAddress READ bitcoinAddress NOTIFY stateChanged)
+    Q_PROPERTY(QString solanaAddress READ solanaAddress NOTIFY stateChanged)
     Q_PROPERTY(int operationCount READ operationCount NOTIFY stateChanged)
+    Q_PROPERTY(QString developmentTestMnemonic READ developmentTestMnemonic CONSTANT)
 
 public:
     explicit WalletVault(QObject *parent = nullptr);
 
     bool backendReady() const;
     bool storageKnown() const;
+    bool storageProtected() const;
     bool walletStored() const;
     bool walletLoaded() const;
     bool lastOperationPassed() const;
@@ -31,12 +35,16 @@ public:
     QString detail() const;
     QString ethereumAddress() const;
     QString bitcoinAddress() const;
+    QString solanaAddress() const;
     int operationCount() const;
+    QString developmentTestMnemonic() const;
 
     Q_INVOKABLE void refreshStatus();
     Q_INVOKABLE void createDemoWallet();
+    Q_INVOKABLE void restoreDevelopmentWallet(const QString &mnemonic);
     Q_INVOKABLE void loadStoredWallet();
     Q_INVOKABLE void clearSession();
+    Q_INVOKABLE void lockSession(const QString &reason);
     Q_INVOKABLE void deleteDemoWallet();
 
 signals:
@@ -48,6 +56,7 @@ private:
         bool signingOk = false;
         QString ethereumAddress;
         QString bitcoinAddress;
+        QString solanaAddress;
         QString error;
     };
 
@@ -58,6 +67,9 @@ private:
     };
 
     bool ensureWalletCollection(QString *errorMessage);
+    bool storeDevelopmentMnemonic(const QByteArray &mnemonic,
+                                  const QString &successStatus,
+                                  QString *errorMessage);
     SecretFetchState fetchMnemonic(QByteArray *mnemonic, QString *errorMessage);
     DerivedWallet deriveAndCheck(const QByteArray &mnemonic) const;
     bool queryWalletPresence(bool allowInteraction, QString *errorMessage);
@@ -68,6 +80,7 @@ private:
     Sailfish::Secrets::SecretManager m_manager;
     bool m_backendReady = false;
     bool m_storageKnown = false;
+    bool m_storageProtected = false;
     bool m_walletStored = false;
     bool m_walletLoaded = false;
     bool m_lastOperationPassed = false;
@@ -75,5 +88,6 @@ private:
     QString m_detail;
     QString m_ethereumAddress;
     QString m_bitcoinAddress;
+    QString m_solanaAddress;
     int m_operationCount = 0;
 };

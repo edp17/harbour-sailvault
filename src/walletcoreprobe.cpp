@@ -182,6 +182,18 @@ void WalletCoreProbe::run()
                   : actualBtc,
               expectedBtc);
 
+    const QString expectedSol =
+        QStringLiteral("GjJyeC1r2RgkuoCWMyPYkCWSGSGLcz266EaAkLA27AhL");
+    TWStringGuard solAddress(
+        TWHDWalletGetAddressForCoin(wallet.get(), TWCoinTypeSolana));
+    const QString actualSol = fromTWString(solAddress.get());
+    addResult(QStringLiteral("Solana derivation"),
+              actualSol == expectedSol,
+              actualSol.isEmpty()
+                  ? QStringLiteral("No Solana address returned.")
+                  : actualSol,
+              expectedSol);
+
     // This is the same 32-byte digest used by Wallet Core's own HD-wallet
     // signing test. The test is local-only and never touches a network.
     const uint8_t digestBytes[32] = {

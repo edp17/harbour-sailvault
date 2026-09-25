@@ -1,7 +1,12 @@
 import QtQuick 2.0
 import Sailfish.Silica 1.0
+import org.sailfishos.sailvault 1.0
 
 CoverBackground {
+    AppTools {
+        id: tools
+    }
+
     Column {
         anchors.centerIn: parent
         width: parent.width - 2 * Theme.paddingLarge
@@ -15,7 +20,7 @@ CoverBackground {
 
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: "Milestone 3"
+            text: "Milestone " + tools.milestone
             color: Theme.secondaryColor
             font.pixelSize: Theme.fontSizeSmall
         }
@@ -23,8 +28,9 @@ CoverBackground {
         Label {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
-            text: "Secure wallet\nlifecycle"
+            text: tools.buildLabel
             color: Theme.highlightColor
+            font.pixelSize: Theme.fontSizeSmall
             wrapMode: Text.Wrap
         }
     }

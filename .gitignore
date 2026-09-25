@@ -1,15 +1,50 @@
-build/
-RPMS/
-SRPMS/
+# CMake / native build output
+/build/
+/wallet-core/
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/Makefile
+/compile_commands.json
+/harbour-sailvault
+/harbour-sailvault_autogen/
+
+# Compiler / linker output
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.lo
+*.la
+*.d
+
+# Qt generated output
+*.moc
+moc_*.cpp
+qrc_*.cpp
+.qmake.stash
+*.user
+
+# Sailfish / mb2 / RPM output
+/.mb2/
+/RPMS/
+/SRPMS/
 *.rpm
 *.src.rpm
-vendor/wallet-core/
-!vendor/.gitkeep
 
-.sailvault-tools/
+# Downloaded Trust Wallet Core source
+/vendor/wallet-core/
+!/vendor/.gitkeep
 
-.sailvault-tools-sfossdk/
+# SailVault local build tools and Cargo output
+/.sailvault-tools/
+/.sailvault-tools-sfossdk/
+/.sailvault-cargo-tmp/
+/.sailvault-cbindgen-target/
 
-.sailvault-cargo-tmp/
-
-.sailvault-cbindgen-target/
+# Local logs and temporary files
+*.log
+*~
+*.swp
+*.tmp

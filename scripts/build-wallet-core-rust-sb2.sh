@@ -11,9 +11,18 @@ TOOLS_DIR="${ROOT}/.sailvault-tools"
 CBINDGEN_ROOT="${TOOLS_DIR}/cbindgen-${CBINDGEN_VERSION}"
 CBINDGEN_BIN="${CBINDGEN_ROOT}/bin/cbindgen"
 CBINDGEN_TARGET_DIR="${ROOT}/.sailvault-cbindgen-target"
+SPEC="${ROOT}/rpm/harbour-sailvault.spec"
+
+if ! command -v awk >/dev/null 2>&1; then
+    echo "ERROR: required build tool 'awk' is unavailable." >&2
+    exit 20
+fi
+
+APP_VERSION="$(awk '$1 == "Version:" { print $2; exit }' "${SPEC}")"
+APP_RELEASE="$(awk '$1 == "Release:" { print $2; exit }' "${SPEC}")"
 
 echo "================================================"
-echo " SailVault M3r1 · native Sailfish Rust build"
+echo " SailVault ${APP_VERSION}-${APP_RELEASE} · native Sailfish Rust build"
 echo "================================================"
 echo
 

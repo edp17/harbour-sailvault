@@ -1,117 +1,69 @@
-# SailVault — Milestone 3 revision 1
+# SailVault — Milestone 39
 
 **Package:** `harbour-sailvault`  
-**Version:** `0.3.0-1`  
+**Version:** `0.39.0-1`  
+**Build:** read-only beta 1  
 **Wallet Core compatibility baseline:** `4.0.27`
 
-M1 proved Wallet Core can compile, link and run natively on Sailfish OS aarch64.
-M2 proved Sailfish Secrets encrypted persistence works from the native C++ layer.
+M39 is the first public read-only beta packaging milestone. It promotes the
+proven M38 RC2 feature set without adding transaction construction, signing or
+broadcasting and without changing wallet/provider behaviour.
 
-## M3 goal
+## Read-only beta 1
 
-M3 joins those two pieces into the first real wallet lifecycle layer.
+- Promote the proven RC2 source to `0.39.0-1 / read-only beta 1`.
+- Keep application/runtime behaviour unchanged from M38 RC2.
+- Finalize RPM, About/Cover/Release-readiness build identity through the
+  centralized compile-time metadata.
+- Package final read-only beta release notes and regression checklist.
+- Add explicit fresh-install and M38 → M39 upgrade checks to the device
+  checklist.
+- Strengthen source-package preflight so release-facing metadata cannot still
+  identify the current build as an RC/candidate.
+- Preserve the established release ZIP layout with a top-level
+  `harbour-sailvault/` directory.
 
-It still uses only the public BIP39 test vector:
+## Proven read-only feature set
+
+- native Trust Wallet Core Sailfish/aarch64 compatibility path;
+- Sailfish Secrets development mnemonic storage with `DeviceLockRelock`;
+- development wallet restricted to the published BIP39 test vector;
+- BTC/ETH/SOL public derivation and balances;
+- ERC-20, SPL and Token-2022 holdings;
+- fiat prices, local portfolio history and history analytics;
+- paginated multi-chain activity and chain-specific transaction details;
+- Wallet Core-validated Watch-only and Address book;
+- per-public-address cached balance snapshots;
+- completely offline 492×492 receive QR codes;
+- Provider health and Network fees;
+- automatic session locking;
+- explicit Offline mode and bounded provider timeouts;
+- schema-versioned explicit INI storage, startup persistence probe and
+  malformed non-sensitive-data quarantine;
+- selective privacy/local-data cleanup;
+- completely fresh-install launcher-first persistence verified on device;
+- local Release readiness checks which do not unlock/probe the protected wallet
+  collection.
+
+## Security gate
+
+This is a **read-only beta**, not a real-funds wallet release. The development
+wallet restore path accepts only the public test phrase:
 
 `abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
 
-No real recovery phrase should be used.
+Never enter a personal recovery phrase or use real funds with this Wallet Core
+4.0.27 compatibility baseline.
 
-## M3r1 lifecycle
-
-### Create secure demo wallet
-
-The C++ wallet layer validates the public test mnemonic with Wallet Core,
-creates a dedicated Sailfish Secrets collection, stores the mnemonic, reads it
-back, derives the expected Ethereum and Bitcoin BIP84 addresses, and performs
-an internal secp256k1 sign/verify test.
-
-### Stronger wallet collection
-
-M3 does not reuse the M2 probe collection.
-
-Collection:
-
-`sailvaultwalletv1`
-
-Secret:
-
-`mnemonicv1`
-
-The collection is:
-
-- stored with Sailfish Secrets' default encrypted storage plugin;
-- owner-only;
-- protected by the device lock;
-- configured with `DeviceLockRelock`, so it relocks when the device locks and
-  subsequent access is system-authentication mediated.
-
-The collection name is deliberately alphanumeric to satisfy the SQLCipher
-backend restriction discovered during M2 testing.
-
-### Load stored wallet
-
-The recovery bytes are fetched in C++, passed directly to Wallet Core, and used
-to derive:
-
-Ethereum:
-
-`0x9858EfFD232B4033E47d90003D41EC34EcaEda94`
-
-Bitcoin BIP84:
-
-`bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu`
-
-Wallet Core also performs a fixed-digest secp256k1 signing verification.
-
-Only the public addresses and status information are exposed to QML. Recovery
-material never crosses the C++/QML boundary.
-
-After use, SailVault explicitly overwrites its temporary `QByteArray`
-containing the recovered mnemonic before releasing it.
-
-### Clear session
-
-Clears the public derived addresses from application state without deleting
-the encrypted wallet.
-
-### Delete demo wallet
-
-Deletes the dedicated Sailfish Secrets collection, including the stored
-recovery material.
-
-## Device test sequence
-
-1. Confirm the Wallet Core diagnostic checks still pass.
-2. Tap **Create secure demo wallet**.
-3. Confirm both expected addresses are shown.
-4. Close SailVault completely.
-5. Reopen it.
-6. Tap **Load stored wallet**.
-7. Confirm the same Ethereum and Bitcoin addresses reappear.
-8. Tap **Clear wallet session**; addresses should disappear but storage should remain.
-9. Tap **Load stored wallet** again; addresses should return.
-10. Tap **Delete secure demo wallet**.
-11. Confirm storage reports no wallet.
-12. Try **Load stored wallet**; it should report that no wallet is stored.
-
-Locking the phone between steps 3 and 6 is also useful: M3 uses
-`DeviceLockRelock`, so Sailfish may request system-mediated authentication when
-the wallet is accessed again.
-
-## Security status
-
-This is still a development harness, not a real-funds wallet.
-
-Wallet Core 4.0.27 is only the Sailfish compatibility baseline. Before any
-real-funds beta, move to a maintained Wallet Core version or carefully review
-and backport relevant security fixes.
+Before real-funds transaction functionality is introduced, Wallet Core must be
+upgraded to a maintained version or the relevant security baseline must be
+carefully reviewed/backported.
 
 ## Build
-
-No manual bootstrap is required:
 
 ```sh
 cd ~/mer/android/droid
 rpm/dhd/helpers/build_packages.sh -o -b hybris/mw/harbour-sailvault -s rpm/harbour-sailvault.spec
 ```
+
+No manual Wallet Core bootstrap is required.

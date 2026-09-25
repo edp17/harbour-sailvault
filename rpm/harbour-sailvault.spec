@@ -1,6 +1,6 @@
 Name:       harbour-sailvault
-Summary:    Native multi-chain wallet for Sailfish OS
-Version:    0.3.0
+Summary:    Native read-only multi-chain wallet for Sailfish OS
+Version:    0.39.0
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
@@ -15,6 +15,7 @@ BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5Qml)
 BuildRequires:  pkgconfig(Qt5Quick)
+BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(sailfishsecrets)
 BuildRequires:  boost-devel
 BuildRequires:  desktop-file-utils
@@ -25,22 +26,25 @@ BuildRequires:  cargo
 BuildRequires:  unzip
 
 %description
-SailVault is a native multi-chain wallet project for Sailfish OS.
-Milestone 3 integrates Sailfish Secrets with Wallet Core to prove a secure
-wallet create/load/derive/sign/delete lifecycle. It is not yet a usable wallet.
+SailVault is a native read-only multi-chain wallet for Sailfish OS.
+This read-only beta release provides BTC/ETH/SOL public portfolio monitoring,
+activity, tokens, offline receive QR codes, Watch-only and Address book support.
+Transaction construction, signing and broadcasting are intentionally unavailable.
 
 %prep
 %setup -q -n %{name}-%{version}
 
 %build
-# M3r1 keeps the proven Wallet Core build recipe and integrates the
-# application wallet lifecycle with a dedicated relocking Sailfish Secrets collection.
+# Preserve the proven Sailfish Wallet Core build path and read-only architecture.
 ./scripts/build-wallet-core-rust-sb2.sh
 
 %cmake \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/usr
 %make_build
+
+%check
+./scripts/preflight.sh
 
 %install
 rm -rf %{buildroot}
@@ -56,3 +60,4 @@ desktop-file-install --delete-original \
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/86x86/apps/%{name}.png
+%doc LICENSE README.md docs/READ_ONLY_BETA_CHECKLIST.md docs/RELEASE_NOTES.md CHANGELOG.md
