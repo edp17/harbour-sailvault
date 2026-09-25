@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.18)
-project(harbour-sailvault LANGUAGES C CXX)
+project(harbour-sailvault VERSION 0.39.0 LANGUAGES C CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-find_package(Qt5 REQUIRED COMPONENTS Core Gui Qml Quick)
+find_package(Qt5 REQUIRED COMPONENTS Core Gui Qml Quick Network)
 find_package(Threads REQUIRED)
 include(FindPkgConfig)
 pkg_search_module(SAILFISH sailfishapp REQUIRED)
@@ -76,10 +76,43 @@ add_executable(harbour-sailvault
     src/walletcoreprobe.h
     src/walletvault.cpp
     src/walletvault.h
+    src/portfolioservice.cpp
+    src/portfolioservice.h
+    src/portfoliohistoryservice.cpp
+    src/portfoliohistoryservice.h
+    src/apptools.cpp
+    src/apptools.h
+    src/activityservice.cpp
+    src/activityservice.h
+    src/tokenservice.cpp
+    src/tokenservice.h
+    src/priceservice.cpp
+    src/priceservice.h
+    src/sessionsecurity.cpp
+    src/sessionsecurity.h
+    src/settingsstore.cpp
+    src/settingsstore.h
+    src/transactiondetailservice.cpp
+    src/transactiondetailservice.h
+    src/watchonlyservice.cpp
+    src/watchonlyservice.h
+    src/addressbookservice.cpp
+    src/addressbookservice.h
+    src/qrimageprovider.cpp
+    src/qrimageprovider.h
+    src/networkhealthservice.cpp
+    src/networkhealthservice.h
+    src/networkfeeservice.cpp
+    src/networkfeeservice.h
+    src/networkrequestutils.h
 )
 
 target_compile_definitions(harbour-sailvault PRIVATE
     SAILVAULT_WALLET_CORE_VERSION="4.0.27"
+    SAILVAULT_APP_VERSION="${PROJECT_VERSION}"
+    SAILVAULT_PACKAGE_RELEASE="1"
+    SAILVAULT_MILESTONE="39"
+    SAILVAULT_BUILD_LABEL="read-only beta 1"
 )
 
 target_include_directories(harbour-sailvault PRIVATE
@@ -92,6 +125,7 @@ target_link_libraries(harbour-sailvault PRIVATE
     Qt5::Gui
     Qt5::Qml
     Qt5::Quick
+    Qt5::Network
     ${SAILFISH_LDFLAGS}
     ${SAILFISHSECRETS_LDFLAGS}
     TrustWalletCore
