@@ -193,10 +193,7 @@ void NetworkHealthService::checkAll(const QString &ethereumRpc,
 bool NetworkHealthService::validHttpsUrl(const QString &text, QUrl *url)
 {
     const QUrl candidate(text.trimmed());
-    const bool valid = candidate.isValid()
-        && candidate.scheme().compare(QStringLiteral("https"), Qt::CaseInsensitive) == 0
-        && !candidate.host().isEmpty();
-
+    const bool valid = SailVaultNetwork::isValidHttpsEndpoint(candidate);
     if (valid && url)
         *url = candidate;
     return valid;
@@ -217,39 +214,14 @@ QString NetworkHealthService::appendPath(const QString &base,
 
 QString NetworkHealthService::replyError(QNetworkReply *reply)
 {
-    if (reply->property("sailvaultTimedOut").toBool())
-        return QStringLiteral("Request timed out");
-
-    const int status = reply->attribute(
-        QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        if (status > 0)
-            return QStringLiteral("HTTP %1 · %2")
-                .arg(status).arg(reply->errorString());
-        return reply->errorString();
-    }
-
-    if (status >= 400)
-        return QStringLiteral("HTTP %1").arg(status);
-
-    return QString();
+    return SailVaultNetwork::errorText(
+        reply, kRequestTimeoutMs, SailVaultNetwork::DefaultMaxResponseBytes);
 }
 
 void NetworkHealthService::armTimeout(QNetworkReply *reply)
 {
-    QTimer *timer = new QTimer(reply);
-    timer->setSingleShot(true);
-    timer->setInterval(kRequestTimeoutMs);
-
-    QObject::connect(timer, &QTimer::timeout, reply, [reply]() {
-        reply->setProperty("sailvaultTimedOut", true);
-        reply->abort();
-    });
-    QObject::connect(reply, &QNetworkReply::finished,
-                     timer, &QTimer::stop);
-
-    timer->start();
+    SailVaultNetwork::armTimeout(
+        reply, kRequestTimeoutMs, SailVaultNetwork::DefaultMaxResponseBytes);
 }
 
 void NetworkHealthService::finishInvalidUrl(ProviderIndex index,
@@ -353,6 +325,7 @@ void NetworkHealthService::checkEthereumRpc(const QString &endpoint,
     body.insert(QStringLiteral("params"), QJsonArray());
 
     const qint64 started = QDateTime::currentMSecsSinceEpoch();
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.post(
         request, QJsonDocument(body).toJson(QJsonDocument::Compact));
     armTimeout(reply);
@@ -436,6 +409,7 @@ void NetworkHealthService::checkEthereumExplorer(const QString &endpoint,
     request.setRawHeader("Accept", "application/json");
 
     const qint64 started = QDateTime::currentMSecsSinceEpoch();
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.get(request);
     armTimeout(reply);
 
@@ -514,6 +488,7 @@ void NetworkHealthService::checkBitcoin(const QString &endpoint,
     request.setRawHeader("Accept", "text/plain");
 
     const qint64 started = QDateTime::currentMSecsSinceEpoch();
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.get(request);
     armTimeout(reply);
 
@@ -584,6 +559,7 @@ void NetworkHealthService::checkSolana(const QString &endpoint,
     body.insert(QStringLiteral("params"), QJsonArray());
 
     const qint64 started = QDateTime::currentMSecsSinceEpoch();
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.post(
         request, QJsonDocument(body).toJson(QJsonDocument::Compact));
     armTimeout(reply);
@@ -660,6 +636,7 @@ void NetworkHealthService::checkKraken(const QString &currency,
     request.setRawHeader("Accept", "application/json");
 
     const qint64 started = QDateTime::currentMSecsSinceEpoch();
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.get(request);
     armTimeout(reply);
 

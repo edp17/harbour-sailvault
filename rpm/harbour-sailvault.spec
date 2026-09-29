@@ -1,6 +1,6 @@
 Name:       harbour-sailvault
 Summary:    Native read-only multi-chain wallet for Sailfish OS
-Version:    0.39.0
+Version:    0.43.0
 Release:    1
 Group:      Qt/Qt
 License:    BSD-3-Clause
@@ -60,4 +60,4 @@ desktop-file-install --delete-original \
 %{_datadir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/86x86/apps/%{name}.png
-%doc LICENSE README.md docs/READ_ONLY_BETA_CHECKLIST.md docs/RELEASE_NOTES.md CHANGELOG.md
+%doc LICENSE README.md CHANGELOG.md docs/READ_ONLY_BETA_CHECKLIST.md docs/WALLET_CORE_MIGRATION_CHECKLIST.md docs/WALLET_CORE_SECURITY_REVIEW.md docs/M41_DEVICE_CHECKLIST.md docs/NETWORK_BOUNDARY_REVIEW.md docs/M42_DEVICE_CHECKLIST.md docs/PROVIDER_PRIVACY_REVIEW.md docs/M43_DEVICE_CHECKLIST.md docs/RELEASE_NOTES.md

@@ -134,7 +134,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: developmentAddress
                       ? "This is the public development wallet on the Wallet Core "
-                        + "4.0.27 compatibility baseline. Do not send real funds "
+                        + "4.8.3 Sailfish baseline. Do not send real funds "
                         + "to this development-wallet address."
                       : "The QR code faithfully represents the public address shown "
                         + "above, but SailVault cannot determine who controls an "

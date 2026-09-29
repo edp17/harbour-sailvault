@@ -123,9 +123,11 @@ QString TransactionDetailService::extraText() const
 QString TransactionDetailService::setting(const char *key,
                                           const char *fallback)
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(key),
-        QString::fromLatin1(fallback)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(key),
+            QString::fromLatin1(fallback)).toString(),
+        QString::fromLatin1(fallback));
 }
 
 QString TransactionDetailService::normalizeBaseUrl(const QString &url)
@@ -140,24 +142,7 @@ QString TransactionDetailService::normalizeBaseUrl(const QString &url)
 
 QString TransactionDetailService::networkErrorText(QNetworkReply *reply)
 {
-    if (SailVaultNetwork::timedOut(reply))
-        return QStringLiteral("Request timed out after 15 seconds");
-
-    const int httpStatus =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        return httpStatus > 0
-            ? QStringLiteral("HTTP %1 · %2")
-                  .arg(httpStatus)
-                  .arg(reply->errorString())
-            : reply->errorString();
-    }
-
-    if (httpStatus < 200 || httpStatus >= 300)
-        return QStringLiteral("HTTP %1").arg(httpStatus);
-
-    return QString();
+    return SailVaultNetwork::errorText(reply);
 }
 
 QString TransactionDetailService::addressHash(const QJsonValue &value)
@@ -419,6 +404,8 @@ void TransactionDetailService::loadEthereum(const QString &hash,
     QNetworkRequest request{QUrl(endpoint)};
     request.setRawHeader("Accept", "application/json");
 
+    SailVaultNetwork::hardenRequest(request);
+
     QNetworkReply *reply = m_network.get(request);
     SailVaultNetwork::armTimeout(reply);
 
@@ -616,6 +603,8 @@ void TransactionDetailService::loadBitcoin(const QString &txid,
     QNetworkRequest request{QUrl(endpoint)};
     request.setRawHeader("Accept", "application/json");
 
+    SailVaultNetwork::hardenRequest(request);
+
     QNetworkReply *reply = m_network.get(request);
     SailVaultNetwork::armTimeout(reply);
 
@@ -780,6 +769,8 @@ void TransactionDetailService::loadSolana(const QString &signature,
     body.insert(QStringLiteral("method"),
                 QStringLiteral("getTransaction"));
     body.insert(QStringLiteral("params"), params);
+
+    SailVaultNetwork::hardenRequest(request);
 
     QNetworkReply *reply =
         m_network.post(

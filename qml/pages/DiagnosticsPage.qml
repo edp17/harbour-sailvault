@@ -6,10 +6,12 @@ Page {
     id: page
 
     property var storageInfo: ({})
+    property var networkInfo: ({})
     property var portfolio
 
     function refreshStorageInfo() {
         storageInfo = tools.settingsDiagnostics()
+        networkInfo = tools.networkSecurityDiagnostics()
     }
 
     Component.onCompleted: refreshStorageInfo()
@@ -120,11 +122,65 @@ Page {
                 text: "Run storage probe again"
                 onClicked: {
                     storageInfo = tools.rerunSettingsPersistenceProbe()
+                    networkInfo = tools.networkSecurityDiagnostics()
                 }
             }
 
             SectionHeader {
-                text: "Network resilience"
+                text: "Network boundary"
+            }
+
+            Label {
+                x: Theme.horizontalPageMargin
+                width: parent.width - 2 * Theme.horizontalPageMargin
+                text: networkInfo.networkBoundaryPassed
+                      ? "✓ Local network-boundary checks passed"
+                      : "✗ Local network-boundary checks failed"
+                color: networkInfo.networkBoundaryPassed
+                       ? Theme.highlightColor
+                       : Theme.primaryColor
+                font.pixelSize: Theme.fontSizeMedium
+                wrapMode: Text.Wrap
+            }
+
+            DetailItem {
+                label: "Endpoint policy"
+                value: networkInfo.detail || "—"
+            }
+
+            DetailItem {
+                label: "Policy self-test"
+                value: networkInfo.policySelfTestPassed ? "Passed" : "Failed"
+            }
+
+            DetailItem {
+                label: "Provider redirects"
+                value: networkInfo.redirectsBlocked ? "Blocked" : "Allowed"
+            }
+
+            DetailItem {
+                label: "Cookies"
+                value: networkInfo.cookieIsolationPassed ? "Not sent / stored" : "Needs attention"
+            }
+
+            DetailItem {
+                label: "HTTP auth reuse"
+                value: networkInfo.authIsolationPassed ? "Disabled" : "Needs attention"
+            }
+
+            DetailItem {
+                label: "HTTP cache"
+                value: networkInfo.cacheIsolationPassed ? "Bypassed / not stored" : "Needs attention"
+            }
+
+            DetailItem {
+                label: "Referer / Origin"
+                value: networkInfo.contextHeaderIsolationPassed ? "Cleared" : "Needs attention"
+            }
+
+            DetailItem {
+                label: "Response ceiling"
+                value: networkInfo.responseLimitText || "—"
             }
 
             DetailItem {
@@ -145,8 +201,10 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Superseded requests are cancelled and stale replies are ignored before "
-                      + "newer refresh state can be replaced."
+                text: "Provider requests are HTTPS-only, redirect-free and stateless: cookies, "
+                      + "cached HTTP authentication, local HTTP caching and referrer/origin context "
+                      + "are disabled. Responses remain bounded before parsing; superseded requests "
+                      + "are cancelled and stale replies cannot replace newer refresh state."
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

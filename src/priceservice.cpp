@@ -247,18 +247,7 @@ QString PriceService::pairFor(const QString &asset, const QString &currency)
 
 QString PriceService::networkErrorText(QNetworkReply *reply)
 {
-    if (SailVaultNetwork::timedOut(reply))
-        return QStringLiteral("Request timed out after 15 seconds");
-
-    const int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    if (reply->error() != QNetworkReply::NoError) {
-        return status > 0
-            ? QStringLiteral("HTTP %1 · %2").arg(status).arg(reply->errorString())
-            : reply->errorString();
-    }
-    if (status < 200 || status >= 300)
-        return QStringLiteral("HTTP %1").arg(status);
-    return QString();
+    return SailVaultNetwork::errorText(reply);
 }
 
 void PriceService::refresh()
@@ -317,6 +306,7 @@ void PriceService::requestTicker(const QString &asset,
 
     QNetworkRequest request{QUrl(endpoint)};
     request.setRawHeader("Accept", "application/json");
+    SailVaultNetwork::hardenRequest(request);
     QNetworkReply *reply = m_network.get(request);
     SailVaultNetwork::armTimeout(reply);
 

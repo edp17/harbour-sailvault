@@ -195,7 +195,7 @@ Page {
 
             DetailItem {
                 label: "Wallet Core"
-                value: "4.0.27 compatibility baseline"
+                value: "4.8.3 Sailfish baseline"
             }
 
             DetailItem {
@@ -206,10 +206,10 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Wallet Core 4.0.27 is retained only as the proven Sailfish build "
-                      + "baseline. Do not use a personal recovery phrase or real funds. "
+                text: "Wallet Core 4.8.3 has passed the Sailfish compatibility gate; M41 adds deeper local security/ABI validation, M42 hardens provider networking and M43 makes provider requests stateless by policy. "
+                      + "Do not use a personal recovery phrase or real funds. "
                       + "Real-funds transaction functionality remains blocked until the "
-                      + "Wallet Core security baseline has been upgraded or reviewed."
+                      + "migration and later signing/security milestones are complete."
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

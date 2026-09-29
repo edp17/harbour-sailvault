@@ -89,7 +89,8 @@ bool validHttpsEndpoint(const QString &text)
     const QUrl url(text.trimmed());
     return url.isValid()
         && url.scheme().compare(QStringLiteral("https"), Qt::CaseInsensitive) == 0
-        && !url.host().isEmpty();
+        && !url.host().isEmpty()
+        && url.userInfo().isEmpty();
 }
 
 void migrateLegacy(QSettings &target)

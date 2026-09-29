@@ -517,7 +517,7 @@ Page {
                     height: solColumn.height + 2 * Theme.paddingLarge
                     onClicked: pageStack.push(Qt.resolvedUrl("ChainPage.qml"), {
                         chainName: "Solana",
-                        chainSubtitle: "Solana mainnet · Wallet Core 4.0.27 default",
+                        chainSubtitle: "Solana mainnet · Wallet Core 4.8.3 Sailfish baseline",
                         address: vault.solanaAddress,
                         balance: portfolio.solanaBalance,
                         vault: vault,

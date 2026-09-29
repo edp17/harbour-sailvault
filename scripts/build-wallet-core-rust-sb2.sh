@@ -11,6 +11,8 @@ TOOLS_DIR="${ROOT}/.sailvault-tools"
 CBINDGEN_ROOT="${TOOLS_DIR}/cbindgen-${CBINDGEN_VERSION}"
 CBINDGEN_BIN="${CBINDGEN_ROOT}/bin/cbindgen"
 CBINDGEN_TARGET_DIR="${ROOT}/.sailvault-cbindgen-target"
+CODEGEN_TARGET_DIR="${ROOT}/.sailvault-codegen-target"
+CODEGEN_BIN="${CODEGEN_TARGET_DIR}/release/parser"
 SPEC="${ROOT}/rpm/harbour-sailvault.spec"
 
 if ! command -v awk >/dev/null 2>&1; then
@@ -26,7 +28,7 @@ echo " SailVault ${APP_VERSION}-${APP_RELEASE} · native Sailfish Rust build"
 echo "================================================"
 echo
 
-echo "Ensuring Wallet Core 4.0.27 source and generated artifacts are prepared..."
+echo "Ensuring Wallet Core 4.8.3 source and generated artifacts are prepared..."
 "${SCRIPT_DIR}/prepare-wallet-core.sh"
 echo
 
@@ -78,7 +80,7 @@ export CXXFLAGS_aarch64_unknown_linux_gnu="${CXXFLAGS:-}"
 # Generate Wallet Core's Rust FFI header first.
 #
 # Sailfish 5 currently supplies cbindgen 0.19, which predates Rust `let ... else`
-# syntax used by Wallet Core 4.0.27 and fails while parsing legacy.rs.
+# syntax used by Wallet Core and fails while parsing newer Rust source.
 # cbindgen 0.26 supports that syntax and is compatible with our Rust 1.75.
 # Build it once per source tree using the exact same proven Sailfish cross path.
 # ---------------------------------------------------------------------------
@@ -139,7 +141,7 @@ export CARGO_TARGET_DIR="${WC}/rust/target"
 export CARGO_BUILD_TARGET="${TARGET}"
 export CARGO_BUILD_JOBS=1
 
-echo "Fetching Wallet Core 4.0.27 locked Rust dependencies..."
+echo "Fetching Wallet Core 4.8.3 locked Rust dependencies..."
 (
     cd "${WC}/rust"
     cargo fetch --locked
@@ -152,12 +154,24 @@ echo "  target:  ${TARGET}"
 echo "  jobs:    1"
 echo
 
+BINDINGS_MANIFEST_DIR="${WC}/rust/bindings"
+rm -rf "${BINDINGS_MANIFEST_DIR}"
+mkdir -p "${BINDINGS_MANIFEST_DIR}"
+export CARGO_WORKSPACE_DIR="${WC}/rust"
+
 cd "${WC}/rust"
+
+RUST_FEATURES="any-coin,bitcoin,ethereum,evm,keypair,solana,utils"
+
+echo "  features: ${RUST_FEATURES}"
+echo
 
 cargo build \
     --locked \
     --release \
     --target "${TARGET}" \
+    --no-default-features \
+    --features "${RUST_FEATURES}" \
     -j1 \
     -p wallet-core-rs
 
@@ -179,3 +193,44 @@ if command -v file >/dev/null 2>&1; then
     file "${DEST_LIB}" || true
 fi
 ls -lh "${DEST_LIB}"
+
+
+# ---------------------------------------------------------------------------
+# Generate Wallet Core's C++ bridge files from Rust #[tw_ffi] manifests.
+# Upstream tools/rust-bindgen runs this after cbindgen and the Rust build.
+# ---------------------------------------------------------------------------
+for manifest in \
+    "${BINDINGS_MANIFEST_DIR}/TWCryptoBoxPublicKey.yaml" \
+    "${BINDINGS_MANIFEST_DIR}/TWCryptoBoxSecretKey.yaml"; do
+    if [[ ! -s "${manifest}" ]]; then
+        echo "ERROR: Rust build did not emit required FFI manifest ${manifest}" >&2
+        echo "       CARGO_WORKSPACE_DIR=${CARGO_WORKSPACE_DIR}" >&2
+        exit 26
+    fi
+done
+
+echo
+echo "Building Wallet Core codegen-v2 with Sailfish Rust 1.75..."
+rm -rf "${CODEGEN_TARGET_DIR}"
+(
+    unset CARGO_BUILD_TARGET
+    export CARGO_TARGET_DIR="${CODEGEN_TARGET_DIR}"
+    cd "${WC}/codegen-v2"
+    cargo build --locked --release -j1
+)
+
+if [[ ! -x "${CODEGEN_BIN}" ]]; then
+    echo "ERROR: codegen-v2 did not produce ${CODEGEN_BIN}" >&2
+    exit 27
+fi
+
+echo "Generating Wallet Core Rust-backed C++ bridge sources..."
+(
+    cd "${WC}/codegen-v2"
+    "${CODEGEN_BIN}" cpp
+)
+
+"${SCRIPT_DIR}/validate-wallet-core-generated.sh" "${WC}"
+
+echo
+echo "Wallet Core Rust/C++ binding generation complete."

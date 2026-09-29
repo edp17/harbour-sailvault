@@ -41,7 +41,7 @@ Page {
 
             DetailItem {
                 label: "Wallet Core"
-                value: tools.walletCoreVersion + " compatibility baseline"
+                value: tools.walletCoreVersion + " · Sailfish baseline"
             }
 
             SectionHeader {
@@ -69,7 +69,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "This development build remains read-only. Transaction construction, signing "
                       + "and broadcasting are intentionally unavailable. Never use a personal recovery "
-                      + "phrase or real funds with the current Wallet Core " + tools.walletCoreVersion + " compatibility baseline."
+                      + "phrase or real funds while the Wallet Core " + tools.walletCoreVersion + " migration is under validation."
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

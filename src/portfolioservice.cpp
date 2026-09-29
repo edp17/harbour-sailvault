@@ -34,22 +34,7 @@ const char kDefaultSolanaTokenRpc[] = "https://api.mainnet.solana.com";
 
 QString replyError(QNetworkReply *reply)
 {
-    if (SailVaultNetwork::timedOut(reply))
-        return QStringLiteral("Request timed out after 15 seconds");
-
-    const int status =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        return status > 0
-            ? QStringLiteral("HTTP %1 · %2").arg(status).arg(reply->errorString())
-            : reply->errorString();
-    }
-
-    if (status < 200 || status >= 300)
-        return QStringLiteral("HTTP %1").arg(status);
-
-    return QString();
+    return SailVaultNetwork::errorText(reply);
 }
 
 QString trimDecimalFraction(QString value)
@@ -142,37 +127,47 @@ bool PortfolioService::usingCachedData() const
 
 QString PortfolioService::ethereumRpcUrl() const
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(kEthereumRpcKey),
-        QString::fromLatin1(kDefaultEthereumRpc)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(kEthereumRpcKey),
+            QString::fromLatin1(kDefaultEthereumRpc)).toString(),
+        QString::fromLatin1(kDefaultEthereumRpc));
 }
 
 QString PortfolioService::ethereumExplorerUrl() const
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(kEthereumExplorerKey),
-        QString::fromLatin1(kDefaultEthereumExplorer)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(kEthereumExplorerKey),
+            QString::fromLatin1(kDefaultEthereumExplorer)).toString(),
+        QString::fromLatin1(kDefaultEthereumExplorer));
 }
 
 QString PortfolioService::bitcoinApiUrl() const
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(kBitcoinApiKey),
-        QString::fromLatin1(kDefaultBitcoinApi)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(kBitcoinApiKey),
+            QString::fromLatin1(kDefaultBitcoinApi)).toString(),
+        QString::fromLatin1(kDefaultBitcoinApi));
 }
 
 QString PortfolioService::solanaRpcUrl() const
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(kSolanaRpcKey),
-        QString::fromLatin1(kDefaultSolanaRpc)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(kSolanaRpcKey),
+            QString::fromLatin1(kDefaultSolanaRpc)).toString(),
+        QString::fromLatin1(kDefaultSolanaRpc));
 }
 
 QString PortfolioService::solanaTokenRpcUrl() const
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(kSolanaTokenRpcKey),
-        QString::fromLatin1(kDefaultSolanaTokenRpc)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(kSolanaTokenRpcKey),
+            QString::fromLatin1(kDefaultSolanaTokenRpc)).toString(),
+        QString::fromLatin1(kDefaultSolanaTokenRpc));
 }
 
 QString PortfolioService::snapshotId(const QString &ethereumAddress,
@@ -467,18 +462,12 @@ QString PortfolioService::normalizeBaseUrl(const QString &url)
     return normalized;
 }
 
-static bool isValidHttpsEndpoint(const QString &url)
-{
-    const QUrl parsed(url);
-    return parsed.isValid()
-        && parsed.scheme().compare(QStringLiteral("https"), Qt::CaseInsensitive) == 0
-        && !parsed.host().isEmpty();
-}
+
 
 void PortfolioService::setEthereumRpcUrl(const QString &url)
 {
     const QString normalized = normalizeBaseUrl(url);
-    if (!isValidHttpsEndpoint(normalized) || normalized == ethereumRpcUrl())
+    if (!SailVaultNetwork::isValidHttpsEndpoint(normalized) || normalized == ethereumRpcUrl())
         return;
 
     SailVaultSettings::setValue(
@@ -489,7 +478,7 @@ void PortfolioService::setEthereumRpcUrl(const QString &url)
 void PortfolioService::setEthereumExplorerUrl(const QString &url)
 {
     const QString normalized = normalizeBaseUrl(url);
-    if (!isValidHttpsEndpoint(normalized) || normalized == ethereumExplorerUrl())
+    if (!SailVaultNetwork::isValidHttpsEndpoint(normalized) || normalized == ethereumExplorerUrl())
         return;
 
     SailVaultSettings::setValue(
@@ -500,7 +489,7 @@ void PortfolioService::setEthereumExplorerUrl(const QString &url)
 void PortfolioService::setBitcoinApiUrl(const QString &url)
 {
     const QString normalized = normalizeBaseUrl(url);
-    if (!isValidHttpsEndpoint(normalized) || normalized == bitcoinApiUrl())
+    if (!SailVaultNetwork::isValidHttpsEndpoint(normalized) || normalized == bitcoinApiUrl())
         return;
 
     SailVaultSettings::setValue(
@@ -511,7 +500,7 @@ void PortfolioService::setBitcoinApiUrl(const QString &url)
 void PortfolioService::setSolanaRpcUrl(const QString &url)
 {
     const QString normalized = normalizeBaseUrl(url);
-    if (!isValidHttpsEndpoint(normalized) || normalized == solanaRpcUrl())
+    if (!SailVaultNetwork::isValidHttpsEndpoint(normalized) || normalized == solanaRpcUrl())
         return;
 
     SailVaultSettings::setValue(
@@ -522,7 +511,7 @@ void PortfolioService::setSolanaRpcUrl(const QString &url)
 void PortfolioService::setSolanaTokenRpcUrl(const QString &url)
 {
     const QString normalized = normalizeBaseUrl(url);
-    if (!isValidHttpsEndpoint(normalized) || normalized == solanaTokenRpcUrl())
+    if (!SailVaultNetwork::isValidHttpsEndpoint(normalized) || normalized == solanaTokenRpcUrl())
         return;
 
     SailVaultSettings::setValue(
@@ -842,6 +831,8 @@ void PortfolioService::refreshEthereum(const QString &address,
     body.insert(QStringLiteral("params"), params);
     body.insert(QStringLiteral("id"), 1);
 
+    SailVaultNetwork::hardenRequest(request);
+
     QNetworkReply *reply =
         m_network.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));
     SailVaultNetwork::armTimeout(reply);
@@ -930,6 +921,8 @@ void PortfolioService::refreshBitcoin(const QString &address,
 
     QNetworkRequest request{QUrl(endpoint)};
     request.setRawHeader("Accept", "application/json");
+
+    SailVaultNetwork::hardenRequest(request);
 
     QNetworkReply *reply = m_network.get(request);
     SailVaultNetwork::armTimeout(reply);
@@ -1031,6 +1024,8 @@ void PortfolioService::refreshSolana(const QString &address,
     body.insert(QStringLiteral("id"), 1);
     body.insert(QStringLiteral("method"), QStringLiteral("getBalance"));
     body.insert(QStringLiteral("params"), params);
+
+    SailVaultNetwork::hardenRequest(request);
 
     QNetworkReply *reply =
         m_network.post(request, QJsonDocument(body).toJson(QJsonDocument::Compact));

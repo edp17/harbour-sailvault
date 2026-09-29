@@ -1,69 +1,53 @@
-# SailVault — Milestone 39
+# SailVault — Milestone 43
 
-**Package:** `harbour-sailvault`  
-**Version:** `0.39.0-1`  
-**Build:** read-only beta 1  
-**Wallet Core compatibility baseline:** `4.0.27`
+**Version:** `0.43.0-1`  
+**Build:** stateless provider privacy  
+**Wallet Core baseline:** `4.8.3`
 
-M39 is the first public read-only beta packaging milestone. It promotes the
-proven M38 RC2 feature set without adding transaction construction, signing or
-broadcasting and without changing wallet/provider behaviour.
+M42 is proven on Xperia 10 III/aarch64 with every Release readiness and Developer diagnostics check passing. M43 keeps the M42 HTTPS/redirect/timeout/response-size boundary unchanged and makes every read-only provider request explicitly stateless at the Qt request layer.
 
-## Read-only beta 1
+## M43 goals
 
-- Promote the proven RC2 source to `0.39.0-1 / read-only beta 1`.
-- Keep application/runtime behaviour unchanged from M38 RC2.
-- Finalize RPM, About/Cover/Release-readiness build identity through the
-  centralized compile-time metadata.
-- Package final read-only beta release notes and regression checklist.
-- Add explicit fresh-install and M38 → M39 upgrade checks to the device
-  checklist.
-- Strengthen source-package preflight so release-facing metadata cannot still
-  identify the current build as an RC/candidate.
-- Preserve the established release ZIP layout with a top-level
-  `harbour-sailvault/` directory.
+- preserve the proven M41 Wallet Core 4.8.3 security/ABI baseline and M42 network boundary;
+- prevent provider cookies from being loaded from or saved to Qt's cookie jar;
+- prevent cached Basic/Digest HTTP credentials from being reused for provider requests;
+- force provider refreshes to bypass the local HTTP cache and prevent responses being saved there;
+- remove accidentally supplied `Cookie`, `Authorization`, `Referer` and `Origin` headers before provider dispatch;
+- send `Cache-Control: no-store, no-cache` on provider calls;
+- keep automatic redirects blocked and explicitly set the redirect budget to zero;
+- extend the completely local network diagnostic and Release readiness gate to cover request-state isolation;
+- keep transaction construction, signing and broadcasting unavailable.
 
-## Proven read-only feature set
-
-- native Trust Wallet Core Sailfish/aarch64 compatibility path;
-- Sailfish Secrets development mnemonic storage with `DeviceLockRelock`;
-- development wallet restricted to the published BIP39 test vector;
-- BTC/ETH/SOL public derivation and balances;
-- ERC-20, SPL and Token-2022 holdings;
-- fiat prices, local portfolio history and history analytics;
-- paginated multi-chain activity and chain-specific transaction details;
-- Wallet Core-validated Watch-only and Address book;
-- per-public-address cached balance snapshots;
-- completely offline 492×492 receive QR codes;
-- Provider health and Network fees;
-- automatic session locking;
-- explicit Offline mode and bounded provider timeouts;
-- schema-versioned explicit INI storage, startup persistence probe and
-  malformed non-sensitive-data quarantine;
-- selective privacy/local-data cleanup;
-- completely fresh-install launcher-first persistence verified on device;
-- local Release readiness checks which do not unlock/probe the protected wallet
-  collection.
-
-## Security gate
-
-This is a **read-only beta**, not a real-funds wallet release. The development
-wallet restore path accepts only the public test phrase:
+The development wallet continues to accept only the published BIP39 test mnemonic:
 
 `abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about`
 
-Never enter a personal recovery phrase or use real funds with this Wallet Core
-4.0.27 compatibility baseline.
-
-Before real-funds transaction functionality is introduced, Wallet Core must be
-upgraded to a maintained version or the relevant security baseline must be
-carefully reviewed/backported.
+Never enter a personal recovery phrase or use real funds with this development build.
 
 ## Build
+
+Normal Sailfish SDK build:
 
 ```sh
 cd ~/mer/android/droid
 rpm/dhd/helpers/build_packages.sh -o -b hybris/mw/harbour-sailvault -s rpm/harbour-sailvault.spec
 ```
 
-No manual Wallet Core bootstrap is required.
+No manual Wallet Core bootstrap should be required. M43 deliberately retains the proven M41 Wallet Core preparation marker and does not alter the M40/M41 compatibility recipe.
+
+On a build failure, use the **first real compiler/linker/Cargo error**; later make/RPM failures are normally consequences.
+
+## Provider privacy boundary
+
+SailVault's public providers do not require browser-style state. M43 therefore makes each request independent of cookies, cached HTTP credentials, local HTTP cache contents and referrer/origin context. This reduces avoidable linkability between provider calls and prevents stale local HTTP state from influencing a user-requested refresh.
+
+This does not make provider requests anonymous. The selected provider can still see network metadata and any public wallet address or transaction identifier required to answer the request. Offline mode remains the only mode that performs no provider request.
+
+## Proven controls retained
+
+M42's HTTPS-only endpoint policy, no-credential URLs, blocked redirects, 16 MiB response ceiling, 15/12-second request timeouts, cancellation and stale-generation protection remain active. M41's BIP-39, BTC/ETH/SOL derivation/address, derivation-boundary, secp256k1 negative and CryptoBox bridge diagnostics remain unchanged.
+
+## Project
+
+Repository: `https://github.com/edp17/harbour-sailvault`  
+License: BSD 3-Clause

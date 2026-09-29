@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(harbour-sailvault VERSION 0.39.0 LANGUAGES C CXX)
+project(harbour-sailvault VERSION 0.43.0 LANGUAGES C CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -15,6 +15,10 @@ set(WALLET_CORE_RUST_LIB "${WALLET_CORE_DIR}/rust/target/release/libwallet_core_
 set(WALLET_CORE_RUST_HEADER "${WALLET_CORE_DIR}/src/rust/bindgen/WalletCoreRSBindgen.h")
 set(WALLET_CORE_DERIVATION_HEADER "${WALLET_CORE_DIR}/include/TrustWalletCore/TWDerivation.h")
 set(WALLET_CORE_PROTO_SENTINEL "${WALLET_CORE_DIR}/src/proto/Algorand.pb.h")
+set(WALLET_CORE_CRYPTOBOX_PUBLIC_HEADER "${WALLET_CORE_DIR}/include/TrustWalletCore/TWCryptoBoxPublicKey.h")
+set(WALLET_CORE_CRYPTOBOX_SECRET_HEADER "${WALLET_CORE_DIR}/include/TrustWalletCore/TWCryptoBoxSecretKey.h")
+set(WALLET_CORE_CRYPTOBOX_PUBLIC_SOURCE "${WALLET_CORE_DIR}/src/Generated/TWCryptoBoxPublicKey.cpp")
+set(WALLET_CORE_CRYPTOBOX_SECRET_SOURCE "${WALLET_CORE_DIR}/src/Generated/TWCryptoBoxSecretKey.cpp")
 
 if(NOT EXISTS "${WALLET_CORE_DIR}/CMakeLists.txt")
     message(FATAL_ERROR
@@ -39,9 +43,18 @@ if(NOT EXISTS "${WALLET_CORE_RUST_HEADER}")
         "See the cbindgen error above this CMake invocation.")
 endif()
 
+if(NOT EXISTS "${WALLET_CORE_CRYPTOBOX_PUBLIC_HEADER}" OR
+   NOT EXISTS "${WALLET_CORE_CRYPTOBOX_SECRET_HEADER}" OR
+   NOT EXISTS "${WALLET_CORE_CRYPTOBOX_PUBLIC_SOURCE}" OR
+   NOT EXISTS "${WALLET_CORE_CRYPTOBOX_SECRET_SOURCE}")
+    message(FATAL_ERROR
+        "Wallet Core Rust-backed C++ bindings are incomplete after the RPM Rust build step. "
+        "See the first codegen-v2/validate-wallet-core-generated.sh error above this CMake invocation.")
+endif()
+
 # Wallet Core defaults are aimed at its own native development builds.
-# Milestone 1 deliberately disables tests/examples and enables only the
-# small downstream cross-build adaptations from patches/.
+# M43 keeps tests/examples disabled in the target RPM and preserves the
+# checked downstream Sailfish compatibility adaptations from scripts/.
 set(TW_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 set(TW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(TW_ENABLE_CCACHE OFF CACHE BOOL "" FORCE)
@@ -108,11 +121,11 @@ add_executable(harbour-sailvault
 )
 
 target_compile_definitions(harbour-sailvault PRIVATE
-    SAILVAULT_WALLET_CORE_VERSION="4.0.27"
+    SAILVAULT_WALLET_CORE_VERSION="4.8.3"
     SAILVAULT_APP_VERSION="${PROJECT_VERSION}"
     SAILVAULT_PACKAGE_RELEASE="1"
-    SAILVAULT_MILESTONE="39"
-    SAILVAULT_BUILD_LABEL="read-only beta 1"
+    SAILVAULT_MILESTONE="43"
+    SAILVAULT_BUILD_LABEL="stateless provider privacy"
 )
 
 target_include_directories(harbour-sailvault PRIVATE

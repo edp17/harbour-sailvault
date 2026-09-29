@@ -8,9 +8,11 @@ Page {
     property var portfolio
     property var vault
     property var storageInfo: ({})
+    property var networkInfo: ({})
 
     function refreshStorageInfo() {
         storageInfo = tools.settingsDiagnostics()
+        networkInfo = tools.networkSecurityDiagnostics()
     }
 
     function checkMark(passed) {
@@ -27,6 +29,7 @@ Page {
 
     function automaticChecksPassed() {
         return storageInfo.persistenceProbePassed
+                && networkInfo.networkBoundaryPassed
                 && probe.allPassed
                 && secretsBackendCheckPassed()
     }
@@ -35,6 +38,8 @@ Page {
         var failed = []
         if (!storageInfo.persistenceProbePassed)
             failed.push("INI persistence")
+        if (!networkInfo.networkBoundaryPassed)
+            failed.push("network boundary")
         if (!probe.allPassed)
             failed.push("Wallet Core self-test")
         if (!secretsBackendCheckPassed())
@@ -64,6 +69,7 @@ Page {
                 text: "Run automatic checks again"
                 onClicked: {
                     storageInfo = tools.rerunSettingsPersistenceProbe()
+                    networkInfo = tools.networkSecurityDiagnostics()
                     probe.run()
                 }
             }
@@ -111,7 +117,7 @@ Page {
 
             DetailItem {
                 label: "Wallet Core"
-                value: tools.walletCoreVersion + " compatibility baseline"
+                value: tools.walletCoreVersion + " · Sailfish baseline"
             }
 
             SectionHeader {
@@ -123,6 +129,14 @@ Page {
                 value: checkMark(storageInfo.persistenceProbePassed)
                        + " "
                        + (storageInfo.persistenceProbePassed ? "Passed" : "Failed")
+            }
+
+            DetailItem {
+                label: "Provider request policy"
+                value: checkMark(networkInfo.networkBoundaryPassed)
+                       + " "
+                       + (networkInfo.networkBoundaryPassed
+                          ? "HTTPS / stateless / bounded" : "Needs attention")
             }
 
             DetailItem {
@@ -218,8 +232,9 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "Fresh-install launcher persistence, explicit Offline mode/provider "
-                      + "timeouts, privacy/local-data cleanup and the relocked Secrets readiness "
-                      + "path have all been exercised during the read-only beta milestones."
+                      + "timeouts, HTTPS/stateless request policy, redirect/response limits, privacy/local-data "
+                      + "cleanup and the relocked Secrets readiness path are covered by the read-only "
+                      + "beta and security-hardening milestones."
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap
@@ -233,9 +248,11 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "Real-funds use remains blocked. Wallet Core " + tools.walletCoreVersion
-                      + " is only the proven Sailfish compatibility baseline. Upgrade to a maintained "
-                      + "Wallet Core release, or complete a careful security review/backport, before "
-                      + "transaction signing or broadcasting is introduced."
+                      + " has passed SailVault's compatibility gate and is the current Sailfish baseline. "
+                      + "M41 expanded local cryptographic and ABI diagnostics; M42 hardened the provider "
+                      + "network boundary; M43 isolates provider request state for additional privacy. "
+                      + "Transaction construction, user signing and broadcasting remain "
+                      + "separate later milestones."
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

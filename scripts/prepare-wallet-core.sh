@@ -3,8 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-VERSION="4.0.27"
-PREPARED_ID="${VERSION}-sailvault-m1r16"
+VERSION="4.8.3"
+PREPARED_ID="${VERSION}-sailvault-m41r1"
 VENDOR_DIR="${ROOT}/vendor/wallet-core"
 PATCHER="${SCRIPT_DIR}/patch-wallet-core.sh"
 GENERATOR="${SCRIPT_DIR}/generate-wallet-core-sources.sh"
@@ -22,7 +22,7 @@ if [[ -f "${VENDOR_DIR}/.sailvault-wallet-core-version" ]] &&
    [[ -s "${VENDOR_DIR}/include/TrustWalletCore/TWDerivation.h" ]] &&
    [[ -s "${VENDOR_DIR}/src/proto/Algorand.pb.h" ]] &&
    [[ -s "${VENDOR_DIR}/src/proto/EthereumRlp.pb.h" ]]; then
-    echo "Wallet Core ${VERSION} is already prepared for SailVault M1r16."
+    echo "Wallet Core ${VERSION} is already prepared with SailVault's proven M41r1 baseline."
     exit 0
 fi
 
@@ -43,9 +43,9 @@ source "${VENDOR_DIR}/tools/dependencies-version"
 
     mkdir -p build/local/src/gtest
     curl -fSsL \
-      -o "build/local/src/gtest/release-${GTEST_VERSION}.tar.gz" \
-      "https://github.com/google/googletest/archive/release-${GTEST_VERSION}.tar.gz"
-    tar xzf "build/local/src/gtest/release-${GTEST_VERSION}.tar.gz" \
+      -o "build/local/src/gtest/googletest-${GTEST_VERSION}.tar.gz" \
+      "https://github.com/google/googletest/releases/download/v${GTEST_VERSION}/googletest-${GTEST_VERSION}.tar.gz"
+    tar xzf "build/local/src/gtest/googletest-${GTEST_VERSION}.tar.gz" \
         -C build/local/src/gtest
 
     mkdir -p build/local/src/check

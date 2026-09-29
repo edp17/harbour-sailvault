@@ -122,9 +122,11 @@ QString TokenService::lastUpdated() const
 
 QString TokenService::setting(const char *key, const char *fallback)
 {
-    return SailVaultSettings::value(
-        QString::fromLatin1(key),
-        QString::fromLatin1(fallback)).toString();
+    return SailVaultNetwork::safeHttpsEndpoint(
+        SailVaultSettings::value(
+            QString::fromLatin1(key),
+            QString::fromLatin1(fallback)).toString(),
+        QString::fromLatin1(fallback));
 }
 
 QString TokenService::normalizeBaseUrl(const QString &url)
@@ -137,22 +139,7 @@ QString TokenService::normalizeBaseUrl(const QString &url)
 
 QString TokenService::networkErrorText(QNetworkReply *reply)
 {
-    if (SailVaultNetwork::timedOut(reply))
-        return QStringLiteral("Request timed out after 15 seconds");
-
-    const int status =
-        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-
-    if (reply->error() != QNetworkReply::NoError) {
-        return status > 0
-            ? QStringLiteral("HTTP %1 · %2").arg(status).arg(reply->errorString())
-            : reply->errorString();
-    }
-
-    if (status < 200 || status >= 300)
-        return QStringLiteral("HTTP %1").arg(status);
-
-    return QString();
+    return SailVaultNetwork::errorText(reply);
 }
 
 bool TokenService::isZeroInteger(const QString &value)
@@ -450,6 +437,8 @@ void TokenService::refreshEthereum(const QString &address,
     QNetworkRequest request{QUrl(endpoint)};
     request.setRawHeader("Accept", "application/json");
 
+    SailVaultNetwork::hardenRequest(request);
+
     QNetworkReply *reply = m_network.get(request);
     SailVaultNetwork::armTimeout(reply);
 
@@ -582,6 +571,8 @@ void TokenService::refreshSolanaProgram(const QString &address,
     body.insert(QStringLiteral("method"),
                 QStringLiteral("getTokenAccountsByOwner"));
     body.insert(QStringLiteral("params"), params);
+
+    SailVaultNetwork::hardenRequest(request);
 
     QNetworkReply *reply =
         m_network.post(request,

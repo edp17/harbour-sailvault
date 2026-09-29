@@ -48,20 +48,28 @@ function(format_name INPUT OUT_VAR)
 endfunction()
 
 function(camel_case INPUT OUT_VAR)
-    string(LENGTH "${INPUT}" _len)
-    if(_len EQUAL 0)
-        set(${OUT_VAR} "" PARENT_SCOPE)
-        return()
-    endif()
-    string(SUBSTRING "${INPUT}" 0 1 _first)
-    string(TOUPPER "${_first}" _first)
-    if(_len GREATER 1)
-        string(SUBSTRING "${INPUT}" 1 -1 _rest)
-        string(TOLOWER "${_rest}" _rest)
-    else()
-        set(_rest "")
-    endif()
-    set(${OUT_VAR} "${_first}${_rest}" PARENT_SCOPE)
+    # Registry derivation names are identifiers such as "stable_account".
+    # Convert each non-alphanumeric-delimited word independently so the C ABI
+    # symbol exactly matches Wallet Core's generated/Rust enum spelling.
+    set(_value "${INPUT}")
+    string(REGEX REPLACE "[^A-Za-z0-9]+" ";" _parts "${_value}")
+    set(_result "")
+    foreach(_part IN LISTS _parts)
+        if(_part STREQUAL "")
+            continue()
+        endif()
+        string(LENGTH "${_part}" _len)
+        string(SUBSTRING "${_part}" 0 1 _first)
+        string(TOUPPER "${_first}" _first)
+        if(_len GREATER 1)
+            string(SUBSTRING "${_part}" 1 -1 _rest)
+            string(TOLOWER "${_rest}" _rest)
+        else()
+            set(_rest "")
+        endif()
+        string(APPEND _result "${_first}${_rest}")
+    endforeach()
+    set(${OUT_VAR} "${_result}" PARENT_SCOPE)
 endfunction()
 
 function(cpp_escape INPUT OUT_VAR)
@@ -99,26 +107,32 @@ list(SORT COIN_KEYS COMPARE NATURAL ORDER ASCENDING)
 set(GENERATED_NOTICE "// SPDX-License-Identifier: Apache-2.0\n//\n// Copyright © 2017 Trust Wallet.\n//\n// This is a GENERATED FILE from \\registry.json, changes made here WILL BE LOST.\n//\n")
 
 # ---- TWDerivation.h ---------------------------------------------------------
-set(OUT "${GENERATED_NOTICE}\n#pragma once\n\n#include \"TWBase.h\"\n\nTW_EXTERN_C_BEGIN\n\n/// Non-default coin address derivation names (default, unnamed derivations are not included).\nTW_EXPORT_ENUM()\nenum TWDerivation {\n    TWDerivationDefault = 0, // default, for any coin\n    TWDerivationCustom = 1, // custom, for any coin\n")
-set(ENUM_COUNT 1)
-foreach(KEY IN LISTS COIN_KEYS)
-    string(REGEX REPLACE "^[0-9]+:" "" I "${KEY}")
-    string(JSON COIN GET "${REGISTRY_JSON}" ${I})
-    string(JSON DERIV_COUNT LENGTH "${COIN}" derivation)
-    if(DERIV_COUNT GREATER 1)
-        math(EXPR LAST_DERIV "${DERIV_COUNT} - 1")
-        foreach(D RANGE 0 ${LAST_DERIV})
-            string(JSON DERIV GET "${COIN}" derivation ${D})
-            json_has("${DERIV}" "name" HAS_NAME)
-            if(D GREATER 0 OR HAS_NAME)
-                derivation_enum_name("${DERIV}" "${COIN}" ENUM_NAME)
-                math(EXPR ENUM_COUNT "${ENUM_COUNT} + 1")
-                string(APPEND OUT "    ${ENUM_NAME} = ${ENUM_COUNT},\n")
-            endif()
-        endforeach()
-    endif()
+# Wallet Core 4.8.3 requires this C enum to stay numerically synchronized with
+# rust/tw_coin_registry/src/tw_derivation.rs. The values are append-only ABI
+# identifiers and therefore must NOT be regenerated from current registry order.
+set(CANONICAL_DERIVATION_ENTRIES
+    "TWDerivationBitcoinSegwit|2"
+    "TWDerivationBitcoinLegacy|3"
+    "TWDerivationBitcoinTestnet|4"
+    "TWDerivationLitecoinLegacy|5"
+    "TWDerivationSolanaSolana|6"
+    "TWDerivationStratisSegwit|7"
+    "TWDerivationBitcoinTaproot|8"
+    "TWDerivationPactusMainnet|9"
+    "TWDerivationPactusTestnet|10"
+    "TWDerivationSmartChainStableAccount|11"
+)
+set(CANONICAL_DERIVATION_NAMES "")
+
+set(OUT "${GENERATED_NOTICE}\n#pragma once\n\n#include \"TWBase.h\"\n\nTW_EXTERN_C_BEGIN\n\n/// Non-default coin address derivation names (default, unnamed derivations are not included).\n/// Note the enum variant must be sync with `TWDerivation` enum in Rust:\n/// https://github.com/trustwallet/wallet-core/blob/master/rust/tw_coin_registry/src/tw_derivation.rs\nTW_EXPORT_ENUM()\nenum TWDerivation {\n    TWDerivationDefault = 0, // default, for any coin\n    TWDerivationCustom = 1, // custom, for any coin\n")
+foreach(ENTRY IN LISTS CANONICAL_DERIVATION_ENTRIES)
+    string(REPLACE "|" ";" PARTS "${ENTRY}")
+    list(GET PARTS 0 ENUM_NAME)
+    list(GET PARTS 1 ENUM_VALUE)
+    list(APPEND CANONICAL_DERIVATION_NAMES "${ENUM_NAME}")
+    string(APPEND OUT "    ${ENUM_NAME} = ${ENUM_VALUE},\n")
 endforeach()
-string(APPEND OUT "};\n\nTW_EXTERN_C_END\n")
+string(APPEND OUT "    // end_of_derivation_enum - USED TO GENERATE CODE\n};\n\nTW_EXTERN_C_END\n")
 file(WRITE "${WC_DIR}/include/TrustWalletCore/TWDerivation.h" "${OUT}")
 
 # ---- TWHRP.h / TWHRP.cpp ---------------------------------------------------
@@ -191,7 +205,7 @@ string(APPEND CHAIN_HEADER "};\n\nTW_EXTERN_C_END\n")
 file(WRITE "${WC_DIR}/include/TrustWalletCore/TWEthereumChainID.h" "${CHAIN_HEADER}")
 
 # ---- CoinInfoData.cpp -------------------------------------------------------
-set(COIN_CPP "// SPDX-License-Identifier: Apache-2.0\n//\n// Copyright © 2017 Trust Wallet.\n//\n// This is a GENERATED FILE, changes made here WILL BE LOST.\n//\n\n#include \"Coin.h\"\n#include <TrustWalletCore/TWCoinTypeConfiguration.h>\n\n#include <vector>\n#include <cassert>\n\nusing namespace TW;\n\nstatic const CoinInfo defaultsForMissing = {\n    \"?\",\n    \"?\",\n    TWBlockchainBitcoin,\n    TWPurposeBIP44,\n    TWCurveNone,\n    {Derivation()},\n    TWPublicKeyTypeSECP256k1,\n    0,\n    0,\n    0,\n    TWHRPUnknown,\n    \"\",\n    Hash::HasherSha256ripemd,\n    Hash::HasherSha256d,\n    Hash::HasherSha256ripemd,\n    \"?\",\n    2,\n    \"\",\n    \"\",\n    0,\n    0\n};\n\n/// Get coin from map, if missing returns defaults (not to have contains-check in each accessor method)\nconst CoinInfo getCoinInfo(TWCoinType coin) {\n    // switch is preferred instead of a data structure, due to initialization issues\n    switch (coin) {\n")
+set(COIN_CPP "// SPDX-License-Identifier: Apache-2.0\n//\n// Copyright © 2017 Trust Wallet.\n//\n// This is a GENERATED FILE, changes made here WILL BE LOST.\n//\n\n#include \"Coin.h\"\n#include <TrustWalletCore/TWCoinTypeConfiguration.h>\n\n#include <vector>\n#include <cassert>\n\nusing namespace TW;\n\nstatic const CoinInfo defaultsForMissing = {\n    \"?\",\n    \"?\",\n    \"?\",\n    TWBlockchainBitcoin,\n    TWPurposeBIP44,\n    TWCurveNone,\n    {Derivation()},\n    TWPublicKeyTypeSECP256k1,\n    0,\n    0,\n    0,\n    TWHRPUnknown,\n    \"\",\n    Hash::HasherSha256ripemd,\n    Hash::HasherSha256d,\n    Hash::HasherSha256ripemd,\n    \"?\",\n    2,\n    \"\",\n    \"\",\n    0,\n    0\n};\n\n/// Get coin from map, if missing returns defaults (not to have contains-check in each accessor method)\nconst CoinInfo getCoinInfo(TWCoinType coin) {\n    // switch is preferred instead of a data structure, due to initialization issues\n    switch (coin) {\n")
 set(COIN_TYPE_LINES "")
 foreach(KEY IN LISTS COIN_KEYS)
     string(REGEX REPLACE "^[0-9]+:" "" I "${KEY}")
@@ -216,11 +230,19 @@ foreach(KEY IN LISTS COIN_KEYS)
 
     cpp_escape("${ID}" ID_ESC)
     cpp_escape("${DISPLAY_NAME}" DISPLAY_ESC)
-    string(APPEND COIN_CPP "        case TWCoinType${NAME_FMT}:\n            return CoinInfo {\n                \"${ID_ESC}\",\n                \"${DISPLAY_ESC}\",\n                TWBlockchain${BLOCKCHAIN_FMT},\n                TWPurposeBIP${PURPOSE},\n                TWCurve${CURVE_FMT},\n                {\n")
+    json_optional("${COIN}" "nativeTokenName" "${DISPLAY_NAME}" NATIVE_TOKEN_NAME)
+    cpp_escape("${NATIVE_TOKEN_NAME}" NATIVE_TOKEN_NAME_ESC)
+    string(APPEND COIN_CPP "        case TWCoinType${NAME_FMT}:\n            return CoinInfo {\n                \"${ID_ESC}\",\n                \"${DISPLAY_ESC}\",\n                \"${NATIVE_TOKEN_NAME_ESC}\",\n                TWBlockchain${BLOCKCHAIN_FMT},\n                TWPurposeBIP${PURPOSE},\n                TWCurve${CURVE_FMT},\n                {\n")
     math(EXPR LAST_DERIV "${DERIV_COUNT} - 1")
     foreach(D RANGE 0 ${LAST_DERIV})
         string(JSON DERIV GET "${COIN}" derivation ${D})
         derivation_enum_name("${DERIV}" "${COIN}" DERIV_ENUM)
+        if(NOT DERIV_ENUM STREQUAL "TWDerivationDefault")
+            list(FIND CANONICAL_DERIVATION_NAMES "${DERIV_ENUM}" DERIV_ENUM_INDEX)
+            if(DERIV_ENUM_INDEX EQUAL -1)
+                message(FATAL_ERROR "Wallet Core 4.8.3 derivation ABI table is missing ${DERIV_ENUM} for ${NAME}")
+            endif()
+        endif()
         string(JSON PATH GET "${DERIV}" path)
         cpp_escape("${PATH}" PATH_ESC)
         json_optional("${DERIV}" "name" "" DERIV_NAME)

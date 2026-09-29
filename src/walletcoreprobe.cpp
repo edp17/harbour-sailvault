@@ -1,12 +1,21 @@
 #include "walletcoreprobe.h"
 
 #include <QSysInfo>
+#include <QStringList>
 #include <QVariantMap>
 
+#include <cstring>
+
+#include <TrustWalletCore/TWAnyAddress.h>
 #include <TrustWalletCore/TWCoinType.h>
+#include <TrustWalletCore/TWCryptoBox.h>
+#include <TrustWalletCore/TWCryptoBoxPublicKey.h>
+#include <TrustWalletCore/TWCryptoBoxSecretKey.h>
 #include <TrustWalletCore/TWCurve.h>
+#include <TrustWalletCore/TWDerivation.h>
 #include <TrustWalletCore/TWData.h>
 #include <TrustWalletCore/TWHDWallet.h>
+#include <TrustWalletCore/TWMnemonic.h>
 #include <TrustWalletCore/TWPrivateKey.h>
 #include <TrustWalletCore/TWPublicKey.h>
 #include <TrustWalletCore/TWString.h>
@@ -16,6 +25,26 @@ namespace {
 const char *kTestMnemonic =
     "abandon abandon abandon abandon abandon abandon abandon abandon "
     "abandon abandon abandon about";
+
+// Wallet Core's derivation identifiers are shared with the Rust registry and are
+// append-only ABI values. M40 had to reproduce this table for Sailfish; keep a
+// compile-time tripwire in the application so drift cannot silently ship.
+static_assert(TWDerivationDefault == 0, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationCustom == 1, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationBitcoinSegwit == 2, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationBitcoinLegacy == 3, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationBitcoinTestnet == 4, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationLitecoinLegacy == 5, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationSolanaSolana == 6, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationStratisSegwit == 7, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationBitcoinTaproot == 8, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationPactusMainnet == 9, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationPactusTestnet == 10, "Wallet Core derivation ABI drift");
+static_assert(TWDerivationSmartChainStableAccount == 11, "Wallet Core derivation ABI drift");
+
+static_assert(TWCoinTypeBitcoin == 0, "Wallet Core Bitcoin coin-type ABI drift");
+static_assert(TWCoinTypeEthereum == 60, "Wallet Core Ethereum coin-type ABI drift");
+static_assert(TWCoinTypeSolana == 501, "Wallet Core Solana coin-type ABI drift");
 
 QString fromTWString(TWString *value)
 {
@@ -74,6 +103,36 @@ public:
     TWHDWallet *get() const { return m_value; }
 private:
     TWHDWallet *m_value;
+};
+
+class TWAnyAddressGuard
+{
+public:
+    explicit TWAnyAddressGuard(TWAnyAddress *value = nullptr) : m_value(value) {}
+    ~TWAnyAddressGuard() { if (m_value) TWAnyAddressDelete(m_value); }
+    TWAnyAddress *get() const { return m_value; }
+private:
+    TWAnyAddress *m_value;
+};
+
+class TWCryptoBoxSecretKeyGuard
+{
+public:
+    explicit TWCryptoBoxSecretKeyGuard(TWCryptoBoxSecretKey *value = nullptr) : m_value(value) {}
+    ~TWCryptoBoxSecretKeyGuard() { if (m_value) TWCryptoBoxSecretKeyDelete(m_value); }
+    TWCryptoBoxSecretKey *get() const { return m_value; }
+private:
+    TWCryptoBoxSecretKey *m_value;
+};
+
+class TWCryptoBoxPublicKeyGuard
+{
+public:
+    explicit TWCryptoBoxPublicKeyGuard(TWCryptoBoxPublicKey *value = nullptr) : m_value(value) {}
+    ~TWCryptoBoxPublicKeyGuard() { if (m_value) TWCryptoBoxPublicKeyDelete(m_value); }
+    TWCryptoBoxPublicKey *get() const { return m_value; }
+private:
+    TWCryptoBoxPublicKey *m_value;
 };
 
 } // namespace
@@ -144,6 +203,20 @@ void WalletCoreProbe::run()
         return;
     }
 
+    TWStringGuard invalidMnemonic(TWStringCreateWithUTF8Bytes(
+        "abandon abandon abandon abandon abandon abandon abandon abandon "
+        "abandon abandon abandon sailvault"));
+    const bool mnemonicValidationPassed =
+        TWMnemonicIsValid(mnemonic.get())
+        && invalidMnemonic.get()
+        && !TWMnemonicIsValid(invalidMnemonic.get());
+    addResult(QStringLiteral("BIP-39 validation"),
+              mnemonicValidationPassed,
+              mnemonicValidationPassed
+                  ? QStringLiteral("Valid test phrase accepted; invalid-word phrase rejected.")
+                  : QStringLiteral("Mnemonic validation did not preserve positive/negative behavior."),
+              QStringLiteral("valid=true; invalid=false"));
+
     TWHDWalletGuard wallet(
         TWHDWalletCreateWithMnemonic(mnemonic.get(), passphrase.get()));
 
@@ -194,6 +267,81 @@ void WalletCoreProbe::run()
                   : actualSol,
               expectedSol);
 
+    // Validate both the positive addresses and deliberately malformed/cross-chain
+    // inputs. These strings are public test vectors only.
+    TWStringGuard ethVector(TWStringCreateWithUTF8Bytes(expectedEth.toUtf8().constData()));
+    TWStringGuard btcVector(TWStringCreateWithUTF8Bytes(expectedBtc.toUtf8().constData()));
+    TWStringGuard solVector(TWStringCreateWithUTF8Bytes(expectedSol.toUtf8().constData()));
+    TWStringGuard invalidAddress(TWStringCreateWithUTF8Bytes("sailvault-not-an-address"));
+
+    const bool addressValidationPassed =
+        ethVector.get() && btcVector.get() && solVector.get() && invalidAddress.get()
+        && TWAnyAddressIsValid(ethVector.get(), TWCoinTypeEthereum)
+        && TWAnyAddressIsValid(btcVector.get(), TWCoinTypeBitcoin)
+        && TWAnyAddressIsValid(solVector.get(), TWCoinTypeSolana)
+        && !TWAnyAddressIsValid(invalidAddress.get(), TWCoinTypeEthereum)
+        && !TWAnyAddressIsValid(invalidAddress.get(), TWCoinTypeBitcoin)
+        && !TWAnyAddressIsValid(invalidAddress.get(), TWCoinTypeSolana)
+        && !TWAnyAddressIsValid(ethVector.get(), TWCoinTypeBitcoin)
+        && !TWAnyAddressIsValid(btcVector.get(), TWCoinTypeSolana);
+    addResult(QStringLiteral("Address validation hardening"),
+              addressValidationPassed,
+              addressValidationPassed
+                  ? QStringLiteral("BTC/ETH/SOL vectors accepted; malformed and wrong-chain inputs rejected.")
+                  : QStringLiteral("Address validation positive/negative gate failed."),
+              QStringLiteral("valid vectors=true; malformed/cross-chain=false"));
+
+    // Round-trip each default derived key through its public key and AnyAddress.
+    // Private-key bytes never leave native C++ and are never placed in result/QML data.
+    bool roundTripPassed = true;
+    QStringList roundTripDetails;
+    struct RoundTripVector {
+        TWCoinType coin;
+        QString name;
+        QString expected;
+    };
+    const RoundTripVector roundTrips[] = {
+        { TWCoinTypeBitcoin, QStringLiteral("BTC"), expectedBtc },
+        { TWCoinTypeEthereum, QStringLiteral("ETH"), expectedEth },
+        { TWCoinTypeSolana, QStringLiteral("SOL"), expectedSol }
+    };
+    for (const RoundTripVector &item : roundTrips) {
+        TWPrivateKeyGuard derivedKey(TWHDWalletGetKeyForCoin(wallet.get(), item.coin));
+        TWPublicKeyGuard derivedPublicKey(
+            derivedKey.get() ? TWPrivateKeyGetPublicKey(derivedKey.get(), item.coin) : nullptr);
+        TWAnyAddressGuard address(
+            derivedPublicKey.get()
+                ? TWAnyAddressCreateWithPublicKey(derivedPublicKey.get(), item.coin)
+                : nullptr);
+        TWStringGuard addressText(
+            address.get() ? TWAnyAddressDescription(address.get()) : nullptr);
+        const QString actual = fromTWString(addressText.get());
+        const bool passed = !actual.isEmpty() && actual == item.expected;
+        roundTripPassed = roundTripPassed && passed;
+        roundTripDetails.append(item.name + QStringLiteral("=")
+                                + (passed ? QStringLiteral("ok") : QStringLiteral("fail")));
+    }
+    addResult(QStringLiteral("Public-key/address round-trip"),
+              roundTripPassed,
+              roundTripDetails.join(QStringLiteral(" · ")),
+              QStringLiteral("BTC=ok · ETH=ok · SOL=ok"));
+
+    // Wallet Core 4.7.0 hardened derivation-index bounds and 4.8.0 made key
+    // retrieval explicitly nullable on failure. Exercise both contracts.
+    TWStringGuard invalidPath(
+        TWStringCreateWithUTF8Bytes("m/44'/60'/2147483648'/0/0"));
+    TWPrivateKeyGuard invalidPathKey(
+        invalidPath.get()
+            ? TWHDWalletGetKey(wallet.get(), TWCoinTypeEthereum, invalidPath.get())
+            : nullptr);
+    const bool invalidPathRejected = invalidPath.get() && !invalidPathKey.get();
+    addResult(QStringLiteral("Derivation-path bounds"),
+              invalidPathRejected,
+              invalidPathRejected
+                  ? QStringLiteral("Out-of-range hardened index rejected with null key result.")
+                  : QStringLiteral("Out-of-range derivation path was not rejected."),
+              QStringLiteral("null key"));
+
     // This is the same 32-byte digest used by Wallet Core's own HD-wallet
     // signing test. The test is local-only and never touches a network.
     const uint8_t digestBytes[32] = {
@@ -224,18 +372,117 @@ void WalletCoreProbe::run()
             const size_t signatureSize = TWDataSize(signature.get());
             const bool verifies =
                 TWPublicKeyVerify(publicKey.get(), signature.get(), digest.get());
-            signPassed = (signatureSize == 65 && verifies);
-            signDetail = QStringLiteral("%1-byte secp256k1 signature; verify=%2")
+
+            uint8_t mutatedDigestBytes[sizeof(digestBytes)];
+            std::memcpy(mutatedDigestBytes, digestBytes, sizeof(digestBytes));
+            mutatedDigestBytes[sizeof(mutatedDigestBytes) - 1] ^= 0x01;
+            TWDataGuard mutatedDigest(
+                TWDataCreateWithBytes(mutatedDigestBytes, sizeof(mutatedDigestBytes)));
+            const uint8_t shortSignatureByte = 0;
+            TWDataGuard shortSignature(
+                TWDataCreateWithBytes(&shortSignatureByte, 1));
+
+            const bool rejectsMutatedDigest = mutatedDigest.get()
+                && !TWPublicKeyVerify(publicKey.get(), signature.get(), mutatedDigest.get());
+            const bool rejectsShortSignature = shortSignature.get()
+                && !TWPublicKeyVerify(publicKey.get(), shortSignature.get(), digest.get());
+
+            signPassed = (signatureSize == 65
+                          && verifies
+                          && rejectsMutatedDigest
+                          && rejectsShortSignature);
+            signDetail = QStringLiteral("%1-byte secp256k1 signature · verify=%2 · mutated-digest=%3 · short-signature=%4")
                     .arg(signatureSize)
-                    .arg(verifies ? QStringLiteral("true")
-                                  : QStringLiteral("false"));
+                    .arg(verifies ? QStringLiteral("true") : QStringLiteral("false"))
+                    .arg(rejectsMutatedDigest ? QStringLiteral("rejected") : QStringLiteral("accepted"))
+                    .arg(rejectsShortSignature ? QStringLiteral("rejected") : QStringLiteral("accepted"));
         }
     }
 
-    addResult(QStringLiteral("secp256k1 sign + verify"),
+    addResult(QStringLiteral("secp256k1 validation hardening"),
               signPassed,
               signDetail,
-              QStringLiteral("65-byte signature; verify=true"));
+              QStringLiteral("65-byte signature verifies; mutated digest and short signature rejected"));
+
+    // M40r9 restored Wallet Core 4.8.3's Rust-backed C++ codegen stage. Exercise
+    // that generated ABI at runtime, including the maintained small-order-key
+    // rejection behavior and a local-only encrypt/decrypt round-trip.
+    bool cryptoBoxPassed = false;
+    QString cryptoBoxDetail;
+    const uint8_t knownSecretBytes[32] = {
+        0xdd, 0x87, 0x00, 0x0d, 0x48, 0x05, 0xd6, 0xfb,
+        0xd8, 0x9a, 0xe1, 0x35, 0x2f, 0x5e, 0x44, 0x45,
+        0x64, 0x8b, 0x79, 0xd5, 0xe9, 0x01, 0xc9, 0x2a,
+        0xeb, 0xcb, 0x61, 0x0e, 0x9b, 0xe4, 0x68, 0xe4
+    };
+    const uint8_t smallOrderPublicKey[32] = { 0 };
+    const uint8_t messageBytes[] = {
+        'S','a','i','l','V','a','u','l','t',' ','M','4','1'
+    };
+
+    TWDataGuard knownSecretData(
+        TWDataCreateWithBytes(knownSecretBytes, sizeof(knownSecretBytes)));
+    TWDataGuard smallOrderData(
+        TWDataCreateWithBytes(smallOrderPublicKey, sizeof(smallOrderPublicKey)));
+    TWDataGuard messageData(
+        TWDataCreateWithBytes(messageBytes, sizeof(messageBytes)));
+
+    if (!knownSecretData.get() || !smallOrderData.get() || !messageData.get()) {
+        cryptoBoxDetail = QStringLiteral("Could not allocate local CryptoBox test data.");
+    } else {
+        const bool knownSecretValid = TWCryptoBoxSecretKeyIsValid(knownSecretData.get());
+        const bool smallOrderRejected = !TWCryptoBoxPublicKeyIsValid(smallOrderData.get());
+        TWCryptoBoxSecretKeyGuard mySecret(
+            knownSecretValid
+                ? TWCryptoBoxSecretKeyCreateWithData(knownSecretData.get())
+                : nullptr);
+        TWCryptoBoxSecretKeyGuard otherSecret(TWCryptoBoxSecretKeyCreate());
+        TWCryptoBoxPublicKeyGuard myPublic(
+            mySecret.get() ? TWCryptoBoxSecretKeyGetPublicKey(mySecret.get()) : nullptr);
+        TWCryptoBoxPublicKeyGuard otherPublic(
+            otherSecret.get() ? TWCryptoBoxSecretKeyGetPublicKey(otherSecret.get()) : nullptr);
+        TWDataGuard importedSecret(
+            mySecret.get() ? TWCryptoBoxSecretKeyData(mySecret.get()) : nullptr);
+        TWDataGuard otherPublicData(
+            otherPublic.get() ? TWCryptoBoxPublicKeyData(otherPublic.get()) : nullptr);
+
+        const bool secretRoundTrip = importedSecret.get()
+            && TWDataEqual(importedSecret.get(), knownSecretData.get());
+        const bool publicValid = otherPublicData.get()
+            && TWCryptoBoxPublicKeyIsValid(otherPublicData.get());
+
+        TWDataGuard encrypted(
+            mySecret.get() && otherPublic.get()
+                ? TWCryptoBoxEncryptEasy(mySecret.get(), otherPublic.get(), messageData.get())
+                : nullptr);
+        TWDataGuard decrypted(
+            encrypted.get() && otherSecret.get() && myPublic.get()
+                ? TWCryptoBoxDecryptEasy(otherSecret.get(), myPublic.get(), encrypted.get())
+                : nullptr);
+        const bool decryptRoundTrip = decrypted.get()
+            && TWDataEqual(decrypted.get(), messageData.get());
+
+        cryptoBoxPassed = knownSecretValid
+            && smallOrderRejected
+            && mySecret.get()
+            && otherSecret.get()
+            && myPublic.get()
+            && otherPublic.get()
+            && secretRoundTrip
+            && publicValid
+            && decryptRoundTrip;
+        cryptoBoxDetail = QStringLiteral("generated bridge=%1 · fixed-key round-trip=%2 · small-order key=%3 · encrypt/decrypt=%4")
+                .arg(mySecret.get() && myPublic.get() && otherSecret.get() && otherPublic.get()
+                         ? QStringLiteral("linked") : QStringLiteral("failed"))
+                .arg(secretRoundTrip ? QStringLiteral("ok") : QStringLiteral("fail"))
+                .arg(smallOrderRejected ? QStringLiteral("rejected") : QStringLiteral("accepted"))
+                .arg(decryptRoundTrip ? QStringLiteral("ok") : QStringLiteral("fail"));
+    }
+
+    addResult(QStringLiteral("Rust/C++ CryptoBox bridge"),
+              cryptoBoxPassed,
+              cryptoBoxDetail,
+              QStringLiteral("linked · fixed-key round-trip=ok · small-order key=rejected · encrypt/decrypt=ok"));
 
     m_allPassed = true;
     for (const QVariant &entry : m_results) {

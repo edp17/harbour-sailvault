@@ -25,6 +25,7 @@ public:
     Q_INVOKABLE void copyText(const QString &text) const;
     Q_INVOKABLE QVariantMap settingsDiagnostics() const;
     Q_INVOKABLE QVariantMap rerunSettingsPersistenceProbe() const;
+    Q_INVOKABLE QVariantMap networkSecurityDiagnostics() const;
     Q_INVOKABLE QVariantMap privacyDiagnostics() const;
     Q_INVOKABLE QVariantMap clearCachedPublicData() const;
     Q_INVOKABLE QVariantMap clearQuarantinedSettingsData() const;
