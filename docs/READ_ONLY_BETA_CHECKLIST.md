@@ -1,34 +1,28 @@
 # SailVault read-only beta 1 device checklist
 
-This checklist is for the M39 / 0.39.0-1 read-only beta 1 release. Never use a
-real recovery phrase or real funds while Wallet Core 4.0.27 is the compatibility
-baseline.
+This regression checklist originated with the M39 read-only beta and is kept current for the M49 / 0.49.0-1 unsigned-construction baseline. Never use a real recovery phrase or real funds with development builds.
 
 ## A. Completely fresh installation
 
 - Use a device/profile on which SailVault has never been installed.
-- Install 0.39.0-1 and launch from the application icon before using a terminal.
-- Open Settings → Release readiness; automatic device checks should pass.
-- Run **Run automatic checks again** repeatedly; the result must remain passed
-  and must not prompt for wallet authentication.
-- Open Developer diagnostics; the INI round-trip must pass and launch count must
-  be non-zero.
-- Change at least one non-sensitive preference, close SailVault completely,
-  reopen it and verify the setting persists.
+- Install 0.49.0-1 and launch from the application icon before using a terminal.
+- Open Settings → Release readiness; **Storage release gate** and all other automatic device checks should pass.
+- Run **Run automatic checks again** repeatedly; the result must remain passed and must not prompt for wallet authentication.
+- Open Developer diagnostics; schema must be v5, storage lifecycle/INI round-trip must pass, and profile origin should be **Fresh profile** with **Tracked from 0.49.0**.
+- Change at least one non-sensitive preference, close SailVault completely, reopen it and verify the setting persists.
 - Reboot the device and verify the same preference still persists.
 
-## B. M38 RC2 → M39 upgrade
+## B. M48 → M49 upgrade
 
-- Install 0.39.0-1 over the proven M38/0.38.0-1 installation.
+- Install 0.49.0-1 over the proven M48/0.48.0-1 installation.
 - Confirm normal startup without a first-run/reset prompt.
+- Confirm Developer diagnostics shows schema v5, **Existing profile**, preserves the earlier **Tracked from** value, and shows **Last upgrade from 0.48.0 · M48**.
 - Confirm the development wallet remains present when it existed before upgrade.
 - Confirm Watch-only addresses and Address book entries remain present.
-- Confirm network endpoints, fiat, Offline mode, session-lock policy and hidden
-  token choices remain unchanged.
+- Confirm network endpoints, fiat, Offline mode, session-lock policy and hidden token choices remain unchanged.
 - Confirm cached balances/prices and local portfolio history remain available.
-- Confirm Settings → Release readiness passes before and after **Run automatic
-  checks again**.
-- Confirm About/Cover identify `0.39.0-1`, Milestone 39 and `read-only beta 1`.
+- Confirm Settings → Release readiness passes before and after **Run automatic checks again**.
+- Confirm About/Cover identify `0.49.0-1`, Milestone 49 and `Ethereum unsigned construction`.
 
 ## C. Development wallet
 
@@ -72,8 +66,9 @@ baseline.
 
 ## G. Release/security gate
 
-- Confirm Release readiness states construction/signing/broadcasting are unavailable.
+- Confirm Developer diagnostics reports **Storage release checks passed**, **Response media types → Validated** and **JSON-RPC envelopes → Validated**.
+- Confirm Release readiness reports **Storage release gate → Fresh / upgrade / persistence validated** and **Provider response validation → Media type / JSON-RPC validated**.
+- Confirm Release readiness states chain transaction construction/signing/broadcasting are unavailable.
 - Confirm About and Cover identify the same package version/milestone/build label.
-- Confirm no UI offers transaction construction, signing or broadcasting.
-- Do not proceed to real-funds functionality until Wallet Core is upgraded or
-  its security baseline has been carefully reviewed/backported.
+- Confirm the development-wallet chain page offers local unsigned intent/review, while no UI offers chain transaction construction, signing or broadcasting.
+- Wallet Core 4.8.4 must continue to pass the local security/ABI diagnostics before any later signing milestone is accepted.

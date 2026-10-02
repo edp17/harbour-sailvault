@@ -39,15 +39,6 @@ Page {
                 description: chainSubtitle
             }
 
-            Label {
-                x: Theme.horizontalPageMargin
-                width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Offline address QR"
-                color: Theme.highlightColor
-                font.pixelSize: Theme.fontSizeLarge
-                horizontalAlignment: Text.AlignHCenter
-            }
-
             Image {
                 id: qrImage
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -134,7 +125,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: developmentAddress
                       ? "This is the public development wallet on the Wallet Core "
-                        + "4.8.3 Sailfish baseline. Do not send real funds "
+                        + tools.walletCoreVersion + " Sailfish baseline. Do not send real funds "
                         + "to this development-wallet address."
                       : "The QR code faithfully represents the public address shown "
                         + "above, but SailVault cannot determine who controls an "

@@ -107,7 +107,7 @@ list(SORT COIN_KEYS COMPARE NATURAL ORDER ASCENDING)
 set(GENERATED_NOTICE "// SPDX-License-Identifier: Apache-2.0\n//\n// Copyright © 2017 Trust Wallet.\n//\n// This is a GENERATED FILE from \\registry.json, changes made here WILL BE LOST.\n//\n")
 
 # ---- TWDerivation.h ---------------------------------------------------------
-# Wallet Core 4.8.3 requires this C enum to stay numerically synchronized with
+# Wallet Core 4.8.4 requires this C enum to stay numerically synchronized with
 # rust/tw_coin_registry/src/tw_derivation.rs. The values are append-only ABI
 # identifiers and therefore must NOT be regenerated from current registry order.
 set(CANONICAL_DERIVATION_ENTRIES
@@ -240,7 +240,7 @@ foreach(KEY IN LISTS COIN_KEYS)
         if(NOT DERIV_ENUM STREQUAL "TWDerivationDefault")
             list(FIND CANONICAL_DERIVATION_NAMES "${DERIV_ENUM}" DERIV_ENUM_INDEX)
             if(DERIV_ENUM_INDEX EQUAL -1)
-                message(FATAL_ERROR "Wallet Core 4.8.3 derivation ABI table is missing ${DERIV_ENUM} for ${NAME}")
+                message(FATAL_ERROR "Wallet Core 4.8.4 derivation ABI table is missing ${DERIV_ENUM} for ${NAME}")
             endif()
         endif()
         string(JSON PATH GET "${DERIV}" path)

@@ -149,7 +149,7 @@ QString ActivityService::normalizeBaseUrl(const QString &url)
 
 QString ActivityService::networkErrorText(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(reply);
+    return SailVaultNetwork::jsonErrorText(reply);
 }
 
 QString ActivityService::formatBitcoin(qint64 satoshis)
@@ -739,6 +739,13 @@ void ActivityService::refreshSolana(const QString &address,
         }
 
         const QJsonObject object = doc.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            setChainFailure(QStringLiteral("Solana"),
+                            rpcEnvelopeError, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             const QJsonObject error = object.value(QStringLiteral("error")).toObject();
             setChainFailure(
@@ -990,6 +997,13 @@ void ActivityService::loadOlderSolana(quint64 generation)
         }
 
         const QJsonObject object = doc.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            finishOlderRequest(QStringLiteral("Solana"), false,
+                               rpcEnvelopeError, 0, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             const QJsonObject error = object.value(QStringLiteral("error")).toObject();
             finishOlderRequest(

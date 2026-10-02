@@ -34,7 +34,7 @@ const char kDefaultSolanaTokenRpc[] = "https://api.mainnet.solana.com";
 
 QString replyError(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(reply);
+    return SailVaultNetwork::jsonErrorText(reply);
 }
 
 QString trimDecimalFraction(QString value)
@@ -875,6 +875,13 @@ void PortfolioService::refreshEthereum(const QString &address,
         }
 
         const QJsonObject object = doc.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            failRequest(QStringLiteral("Ethereum"),
+                        rpcEnvelopeError, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             const QJsonObject error =
                 object.value(QStringLiteral("error")).toObject();
@@ -1069,6 +1076,13 @@ void PortfolioService::refreshSolana(const QString &address,
         }
 
         const QJsonObject object = doc.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            failRequest(QStringLiteral("Solana"),
+                        rpcEnvelopeError, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             const QJsonObject error =
                 object.value(QStringLiteral("error")).toObject();

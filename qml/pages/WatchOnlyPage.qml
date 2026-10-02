@@ -212,7 +212,7 @@ Page {
                     width: parent.width - 2 * Theme.horizontalPageMargin
                     text: "No watch-only profile is saved."
                     color: Theme.highlightColor
-                    font.pixelSize: Theme.fontSizeLarge
+                    font.pixelSize: Theme.fontSizeMedium
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.Wrap
                 }
@@ -302,14 +302,14 @@ Page {
                             color: ethItem.highlighted
                                    ? Theme.highlightColor
                                    : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.ethereumBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {
@@ -374,14 +374,14 @@ Page {
                             color: btcItem.highlighted
                                    ? Theme.highlightColor
                                    : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.bitcoinBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {
@@ -446,14 +446,14 @@ Page {
                             color: solItem.highlighted
                                    ? Theme.highlightColor
                                    : Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.solanaBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {

@@ -53,7 +53,7 @@ Page {
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "SailVault is a native Sailfish application: Silica/QML for the interface, "
                       + "a C++ application layer, Trust Wallet Core for public wallet primitives, "
-                      + "QNetworkAccessManager for read-only providers and Sailfish Secrets for "
+                      + "QNetworkAccessManager for public RPC/API providers and Sailfish Secrets for "
                       + "development recovery material."
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
@@ -67,9 +67,9 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "This development build remains read-only. Transaction construction, signing "
-                      + "and broadcasting are intentionally unavailable. Never use a personal recovery "
-                      + "phrase or real funds while the Wallet Core " + tools.walletCoreVersion + " migration is under validation."
+                text: "M49 can validate/review transfer intent and construct a plain Ethereum EOA EIP-1559 signing payload, "
+                      + "but it cannot access private keys from the transaction layer, sign or broadcast. Bitcoin and Solana remain intent-only. "
+                      + "Never use a personal recovery phrase or real funds with this development wallet."
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

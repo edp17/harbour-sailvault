@@ -184,18 +184,23 @@ Page {
             }
 
             DetailItem {
-                label: "Transaction construction"
-                value: "Unavailable"
+                label: "Transaction intent / review"
+                value: "Available · unsigned / local-only"
             }
 
             DetailItem {
-                label: "Signing / broadcasting"
+                label: "Ethereum construction"
+                value: "Unsigned EIP-1559 · plain EOA only"
+            }
+
+            DetailItem {
+                label: "Signing / broadcast"
                 value: "Unavailable"
             }
 
             DetailItem {
                 label: "Wallet Core"
-                value: "4.8.3 Sailfish baseline"
+                value: tools.walletCoreVersion + " Sailfish baseline"
             }
 
             DetailItem {
@@ -206,10 +211,8 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "Wallet Core 4.8.3 has passed the Sailfish compatibility gate; M41 adds deeper local security/ABI validation, M42 hardens provider networking and M43 makes provider requests stateless by policy. "
-                      + "Do not use a personal recovery phrase or real funds. "
-                      + "Real-funds transaction functionality remains blocked until the "
-                      + "migration and later signing/security milestones are complete."
+                text: "Wallet Core " + tools.walletCoreVersion + " is the proven Sailfish baseline; M41-M47 establish the cryptographic, provider, UI and storage gates; M48 adds local unsigned-intent validation/review; and M49 adds deterministic Ethereum EIP-1559 unsigned construction for plain EOA transfers with Wallet Core Keccak-256. "
+                      + "Do not use a personal recovery phrase or real funds. Private-key signing and broadcasting remain blocked until later security milestones are complete."
                 color: Theme.highlightColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

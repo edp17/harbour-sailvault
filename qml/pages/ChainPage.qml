@@ -108,6 +108,22 @@ Page {
             Button {
                 anchors.horizontalCenter: parent.horizontalCenter
                 enabled: vault && vault.walletLoaded
+                text: "Prepare transfer"
+                onClicked: pageStack.push(Qt.resolvedUrl("TransactionDraftPage.qml"), {
+                    chainName: chainName,
+                    chainSubtitle: chainSubtitle,
+                    sourceAddress: address,
+                    availableBalance: balance,
+                    vault: vault,
+                    ethereumRpcUrl: portfolio ? portfolio.ethereumRpcUrl : "",
+                    bitcoinApiUrl: portfolio ? portfolio.bitcoinApiUrl : "",
+                    solanaRpcUrl: portfolio ? portfolio.solanaRpcUrl : ""
+                })
+            }
+
+            Button {
+                anchors.horizontalCenter: parent.horizontalCenter
+                enabled: vault && vault.walletLoaded
                 text: "Recent activity"
                 onClicked: pageStack.push(Qt.resolvedUrl("ActivityPage.qml"), {
                     ethereumAddress: vault.ethereumAddress,
@@ -138,8 +154,9 @@ Page {
             Label {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
-                text: "This is the public development wallet. The address is safe to copy for testing, "
-                      + "but do not send real funds to it."
+                text: "This is the public development wallet. M52 preserves reviewed unsigned Ethereum, Bitcoin and native-SOL construction and adds an Ethereum-only development sign/verify proof. "
+                      + "That proof is restricted to the published test wallet, discards the raw signature and cannot assemble or broadcast a signed transaction. Bitcoin/Solana signing remain disconnected. "
+                      + "The public BIP84 Bitcoin test address currently has no spendable UTXOs, so live Bitcoin construction should stop safely at the UTXO gate. Do not send real funds to this development wallet."
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

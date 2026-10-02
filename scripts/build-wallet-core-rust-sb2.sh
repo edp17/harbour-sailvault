@@ -28,7 +28,7 @@ echo " SailVault ${APP_VERSION}-${APP_RELEASE} · native Sailfish Rust build"
 echo "================================================"
 echo
 
-echo "Ensuring Wallet Core 4.8.3 source and generated artifacts are prepared..."
+echo "Ensuring Wallet Core 4.8.4 source and generated artifacts are prepared..."
 "${SCRIPT_DIR}/prepare-wallet-core.sh"
 echo
 
@@ -141,7 +141,7 @@ export CARGO_TARGET_DIR="${WC}/rust/target"
 export CARGO_BUILD_TARGET="${TARGET}"
 export CARGO_BUILD_JOBS=1
 
-echo "Fetching Wallet Core 4.8.3 locked Rust dependencies..."
+echo "Fetching Wallet Core 4.8.4 locked Rust dependencies..."
 (
     cd "${WC}/rust"
     cargo fetch --locked

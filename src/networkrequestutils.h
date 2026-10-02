@@ -4,6 +4,8 @@
 
 #include <QByteArray>
 #include <QList>
+#include <QJsonObject>
+#include <QJsonValue>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -84,6 +86,113 @@ inline void hardenRequest(QNetworkRequest &request)
     // the reply guard below independently rejects redirect metadata as well.
     request.setMaximumRedirectsAllowed(0);
     request.setAttribute(QNetworkRequest::FollowRedirectsAttribute, false);
+}
+
+inline QByteArray normalizedMediaType(const QByteArray &contentType)
+{
+    QByteArray type = contentType.trimmed().toLower();
+    const int semicolon = type.indexOf(';');
+    if (semicolon >= 0)
+        type = type.left(semicolon).trimmed();
+    return type;
+}
+
+inline bool isJsonMediaType(const QByteArray &contentType)
+{
+    const QByteArray type = normalizedMediaType(contentType);
+    return type == QByteArray("application/json")
+        || type == QByteArray("application/json-rpc")
+        || type.endsWith("+json");
+}
+
+inline bool isPlainTextMediaType(const QByteArray &contentType)
+{
+    return normalizedMediaType(contentType) == QByteArray("text/plain");
+}
+
+inline QString jsonMediaTypeError(QNetworkReply *reply)
+{
+    if (!reply)
+        return QStringLiteral("Network reply unavailable");
+
+    const QByteArray contentType = reply->rawHeader("Content-Type");
+    if (contentType.isEmpty())
+        return QStringLiteral("Provider response missing JSON Content-Type");
+
+    if (!isJsonMediaType(contentType)) {
+        return QStringLiteral("Provider response Content-Type is %1 · expected JSON")
+            .arg(QString::fromLatin1(normalizedMediaType(contentType)));
+    }
+    return QString();
+}
+
+inline QString plainTextMediaTypeError(QNetworkReply *reply)
+{
+    if (!reply)
+        return QStringLiteral("Network reply unavailable");
+
+    const QByteArray contentType = reply->rawHeader("Content-Type");
+    if (contentType.isEmpty())
+        return QStringLiteral("Provider response missing text Content-Type");
+
+    if (!isPlainTextMediaType(contentType)) {
+        return QStringLiteral("Provider response Content-Type is %1 · expected text/plain")
+            .arg(QString::fromLatin1(normalizedMediaType(contentType)));
+    }
+    return QString();
+}
+
+inline bool jsonValuesEqual(const QJsonValue &actual,
+                            const QJsonValue &expected)
+{
+    if (actual.type() != expected.type())
+        return false;
+
+    if (actual.isString())
+        return actual.toString() == expected.toString();
+    if (actual.isDouble())
+        return actual.toDouble() == expected.toDouble();
+    if (actual.isBool())
+        return actual.toBool() == expected.toBool();
+    if (actual.isNull() || actual.isUndefined())
+        return true;
+    return actual.toVariant() == expected.toVariant();
+}
+
+inline bool validateJsonRpcEnvelope(const QJsonObject &object,
+                                    const QJsonValue &expectedId,
+                                    QString *detail = nullptr)
+{
+    const auto fail = [detail](const QString &message) {
+        if (detail)
+            *detail = message;
+        return false;
+    };
+
+    if (object.value(QStringLiteral("jsonrpc")).toString()
+            != QStringLiteral("2.0")) {
+        return fail(QStringLiteral("JSON-RPC version is not 2.0"));
+    }
+
+    if (!object.contains(QStringLiteral("id"))
+            || !jsonValuesEqual(object.value(QStringLiteral("id")), expectedId)) {
+        return fail(QStringLiteral("JSON-RPC response ID does not match request"));
+    }
+
+    const bool hasResult = object.contains(QStringLiteral("result"));
+    const bool hasError = object.contains(QStringLiteral("error"));
+    if (hasResult == hasError) {
+        return fail(QStringLiteral(
+            "JSON-RPC response must contain exactly one of result or error"));
+    }
+
+    if (hasError && !object.value(QStringLiteral("error")).isObject()) {
+        return fail(QStringLiteral("JSON-RPC error member is not an object"));
+    }
+
+    if (detail)
+        detail->clear();
+    return true;
 }
 
 inline QString responseLimitText(qint64 maxBytes = DefaultMaxResponseBytes)
@@ -255,6 +364,22 @@ inline QString errorText(QNetworkReply *reply,
         return QStringLiteral("HTTP %1").arg(status);
 
     return QString();
+}
+
+inline QString jsonErrorText(QNetworkReply *reply,
+                             int timeoutMs = DefaultRequestTimeoutMs,
+                             qint64 maxResponseBytes = DefaultMaxResponseBytes)
+{
+    const QString networkError = errorText(reply, timeoutMs, maxResponseBytes);
+    return networkError.isEmpty() ? jsonMediaTypeError(reply) : networkError;
+}
+
+inline QString plainTextErrorText(QNetworkReply *reply,
+                                  int timeoutMs = DefaultRequestTimeoutMs,
+                                  qint64 maxResponseBytes = DefaultMaxResponseBytes)
+{
+    const QString networkError = errorText(reply, timeoutMs, maxResponseBytes);
+    return networkError.isEmpty() ? plainTextMediaTypeError(reply) : networkError;
 }
 
 inline void cancelOutstanding(QNetworkAccessManager *manager)

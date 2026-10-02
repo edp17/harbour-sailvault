@@ -22,6 +22,11 @@
 #include "qrimageprovider.h"
 #include "networkhealthservice.h"
 #include "networkfeeservice.h"
+#include "unsignedtransactionservice.h"
+#include "ethereumunsignedtransactionservice.h"
+#include "bitcoinunsignedtransactionservice.h"
+#include "solanaunsignedtransactionservice.h"
+#include "developmentsigningservice.h"
 
 int main(int argc, char *argv[])
 {
@@ -60,6 +65,16 @@ int main(int argc, char *argv[])
         "org.sailfishos.sailvault", 1, 0, "NetworkHealthService");
     qmlRegisterType<NetworkFeeService>(
         "org.sailfishos.sailvault", 1, 0, "NetworkFeeService");
+    qmlRegisterType<UnsignedTransactionService>(
+        "org.sailfishos.sailvault", 1, 0, "UnsignedTransactionService");
+    qmlRegisterType<EthereumUnsignedTransactionService>(
+        "org.sailfishos.sailvault", 1, 0, "EthereumUnsignedTransactionService");
+    qmlRegisterType<BitcoinUnsignedTransactionService>(
+        "org.sailfishos.sailvault", 1, 0, "BitcoinUnsignedTransactionService");
+    qmlRegisterType<SolanaUnsignedTransactionService>(
+        "org.sailfishos.sailvault", 1, 0, "SolanaUnsignedTransactionService");
+    qmlRegisterType<DevelopmentSigningService>(
+        "org.sailfishos.sailvault", 1, 0, "DevelopmentSigningService");
 
     QScopedPointer<QQuickView> view(SailfishApp::createView());
 

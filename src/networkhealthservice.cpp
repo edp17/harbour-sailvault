@@ -214,7 +214,7 @@ QString NetworkHealthService::appendPath(const QString &base,
 
 QString NetworkHealthService::replyError(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(
+    return SailVaultNetwork::jsonErrorText(
         reply, kRequestTimeoutMs, SailVaultNetwork::DefaultMaxResponseBytes);
 }
 
@@ -366,6 +366,13 @@ void NetworkHealthService::checkEthereumRpc(const QString &endpoint,
         }
 
         const QJsonObject object = document.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            finishProvider(EthereumRpc, QStringLiteral("fail"),
+                           rpcEnvelopeError, elapsed, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             finishProvider(EthereumRpc, QStringLiteral("fail"),
                            QStringLiteral("JSON-RPC returned an error"),
@@ -497,7 +504,8 @@ void NetworkHealthService::checkBitcoin(const QString &endpoint,
         const QNetworkReply::NetworkError errorCode = reply->error();
         const QString body = QString::fromUtf8(reply->readAll()).trimmed();
         const qint64 elapsed = elapsedSince(started);
-        const QString error = replyError(reply);
+        const QString error = SailVaultNetwork::plainTextErrorText(
+            reply, kRequestTimeoutMs, SailVaultNetwork::DefaultMaxResponseBytes);
         reply->deleteLater();
 
         if (generation != m_generation)
@@ -600,6 +608,13 @@ void NetworkHealthService::checkSolana(const QString &endpoint,
         }
 
         const QJsonObject object = document.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            finishProvider(index, QStringLiteral("fail"),
+                           rpcEnvelopeError, elapsed, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             finishProvider(index, QStringLiteral("fail"),
                            QStringLiteral("JSON-RPC returned an error"),

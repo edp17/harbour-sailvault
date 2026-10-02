@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(harbour-sailvault VERSION 0.43.0 LANGUAGES C CXX)
+project(harbour-sailvault VERSION 0.52.0 LANGUAGES C CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -53,7 +53,7 @@ if(NOT EXISTS "${WALLET_CORE_CRYPTOBOX_PUBLIC_HEADER}" OR
 endif()
 
 # Wallet Core defaults are aimed at its own native development builds.
-# M43 keeps tests/examples disabled in the target RPM and preserves the
+# SailVault keeps tests/examples disabled in the target RPM and preserves the
 # checked downstream Sailfish compatibility adaptations from scripts/.
 set(TW_UNIT_TESTS OFF CACHE BOOL "" FORCE)
 set(TW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -118,14 +118,24 @@ add_executable(harbour-sailvault
     src/networkfeeservice.cpp
     src/networkfeeservice.h
     src/networkrequestutils.h
+    src/unsignedtransactionservice.cpp
+    src/unsignedtransactionservice.h
+    src/ethereumunsignedtransactionservice.cpp
+    src/ethereumunsignedtransactionservice.h
+    src/bitcoinunsignedtransactionservice.cpp
+    src/bitcoinunsignedtransactionservice.h
+    src/solanaunsignedtransactionservice.cpp
+    src/solanaunsignedtransactionservice.h
+    src/developmentsigningservice.cpp
+    src/developmentsigningservice.h
 )
 
 target_compile_definitions(harbour-sailvault PRIVATE
-    SAILVAULT_WALLET_CORE_VERSION="4.8.3"
+    SAILVAULT_WALLET_CORE_VERSION="4.8.4"
     SAILVAULT_APP_VERSION="${PROJECT_VERSION}"
     SAILVAULT_PACKAGE_RELEASE="1"
-    SAILVAULT_MILESTONE="43"
-    SAILVAULT_BUILD_LABEL="stateless provider privacy"
+    SAILVAULT_MILESTONE="52"
+    SAILVAULT_BUILD_LABEL="development signing boundary"
 )
 
 target_include_directories(harbour-sailvault PRIVATE

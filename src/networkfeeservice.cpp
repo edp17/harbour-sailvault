@@ -190,7 +190,7 @@ QString NetworkFeeService::appendPath(const QString &base,
 
 QString NetworkFeeService::replyError(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(
+    return SailVaultNetwork::jsonErrorText(
         reply, kRequestTimeoutMs, SailVaultNetwork::DefaultMaxResponseBytes);
 }
 
@@ -351,6 +351,14 @@ void NetworkFeeService::refreshEthereum(const QString &endpoint,
         }
 
         const QJsonObject object = document.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            finishEstimate(Ethereum, QStringLiteral("fail"),
+                           QStringLiteral("Ethereum estimate failed"),
+                           rpcEnvelopeError, elapsed, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             finishEstimate(Ethereum, QStringLiteral("fail"),
                            QStringLiteral("Ethereum estimate failed"),
@@ -550,6 +558,14 @@ void NetworkFeeService::refreshSolana(const QString &endpoint,
         }
 
         const QJsonObject object = document.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(1), &rpcEnvelopeError)) {
+            finishEstimate(Solana, QStringLiteral("fail"),
+                           QStringLiteral("Solana estimate failed"),
+                           rpcEnvelopeError, elapsed, generation);
+            return;
+        }
         if (object.contains(QStringLiteral("error"))) {
             finishEstimate(Solana, QStringLiteral("fail"),
                            QStringLiteral("Solana estimate failed"),

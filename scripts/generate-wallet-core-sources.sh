@@ -9,7 +9,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WC="$(cd "$1" && pwd)"
-WC_VERSION="4.8.3"
+WC_VERSION="4.8.4"
 PROTOBUF_VERSION="3.20.3"
 TOOLS_ROOT="${ROOT}/.sailvault-tools/wallet-core-codegen-${WC_VERSION}"
 REGISTRY_GENERATOR="${SCRIPT_DIR}/generate-wallet-core-registry.cmake"

@@ -76,7 +76,7 @@ Page {
                       ? detail.direction
                       : fallbackSummary
                 color: Theme.primaryColor
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: Theme.fontSizeMedium
                 wrapMode: Text.Wrap
             }
 

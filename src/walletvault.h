@@ -3,7 +3,12 @@
 #include <QObject>
 #include <QString>
 
+#include <functional>
+
 #include <Secrets/secretmanager.h>
+
+struct TWPrivateKey;
+class DevelopmentSigningService;
 
 class WalletVault : public QObject
 {
@@ -51,6 +56,16 @@ signals:
     void stateChanged();
 
 private:
+    friend class DevelopmentSigningService;
+
+    // C++-only secret boundary used by the development signer. WalletVault
+    // revalidates the stored public test mnemonic/address set, derives only
+    // the transient Ethereum key handle and lends it to the callback. Recovery
+    // and private-key bytes never cross into QML or network services.
+    bool withVerifiedDevelopmentEthereumKey(
+        const std::function<bool(TWPrivateKey *, QString *)> &operation,
+        QString *errorMessage);
+
     struct DerivedWallet {
         bool ok = false;
         bool signingOk = false;

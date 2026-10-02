@@ -3,12 +3,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-VERSION="4.8.3"
-PREPARED_ID="${VERSION}-sailvault-m41r1"
+VERSION="4.8.4"
+SOURCE_COMMIT="d40d24a63d92619167903369308bf0e2f7eb3a59"
+PREPARED_ID="${VERSION}-d40d24a63d92-sailvault-m45r1"
 VENDOR_DIR="${ROOT}/vendor/wallet-core"
 PATCHER="${SCRIPT_DIR}/patch-wallet-core.sh"
 GENERATOR="${SCRIPT_DIR}/generate-wallet-core-sources.sh"
-ARCHIVE_URL="https://github.com/trustwallet/wallet-core/archive/refs/tags/${VERSION}.tar.gz"
+ARCHIVE_URL="https://github.com/trustwallet/wallet-core/archive/${SOURCE_COMMIT}.tar.gz"
 
 for cmd in curl tar awk grep mktemp; do
     if ! command -v "${cmd}" >/dev/null 2>&1; then
@@ -22,11 +23,11 @@ if [[ -f "${VENDOR_DIR}/.sailvault-wallet-core-version" ]] &&
    [[ -s "${VENDOR_DIR}/include/TrustWalletCore/TWDerivation.h" ]] &&
    [[ -s "${VENDOR_DIR}/src/proto/Algorand.pb.h" ]] &&
    [[ -s "${VENDOR_DIR}/src/proto/EthereumRlp.pb.h" ]]; then
-    echo "Wallet Core ${VERSION} is already prepared with SailVault's proven M41r1 baseline."
+    echo "Wallet Core ${VERSION} (${SOURCE_COMMIT:0:12}) is already prepared for SailVault M45."
     exit 0
 fi
 
-echo "Preparing Trust Wallet Core ${VERSION}..."
+echo "Preparing Trust Wallet Core ${VERSION} from pinned commit ${SOURCE_COMMIT}..."
 rm -rf "${VENDOR_DIR}"
 mkdir -p "${VENDOR_DIR}"
 
@@ -35,6 +36,14 @@ trap 'rm -f "${TMP_ARCHIVE}"' EXIT
 
 curl --fail --location --retry 3 --output "${TMP_ARCHIVE}" "${ARCHIVE_URL}"
 tar -xzf "${TMP_ARCHIVE}" --strip-components=1 -C "${VENDOR_DIR}"
+
+# 4.8.4 is a one-commit release over 4.8.3. Pin the immutable commit above and
+# verify the release-specific registry change so a moved tag or wrong archive
+# cannot silently become SailVault's Wallet Core source.
+if ! grep -Fq '"url": "https://robin.etherscan.io"' "${VENDOR_DIR}/registry.json"; then
+    echo "ERROR: pinned Wallet Core source does not contain the expected 4.8.4 registry marker." >&2
+    exit 4
+fi
 
 echo "Downloading Wallet Core's pinned source dependencies..."
 source "${VENDOR_DIR}/tools/dependencies-version"

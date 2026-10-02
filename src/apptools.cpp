@@ -50,6 +50,7 @@ QVariantMap AppTools::settingsDiagnostics() const
 QVariantMap AppTools::rerunSettingsPersistenceProbe() const
 {
     SailVaultSettings::runPersistenceProbe();
+    SailVaultSettings::runStorageLifecycleProbe();
     return SailVaultSettings::diagnostics();
 }
 
@@ -147,6 +148,62 @@ QVariantMap AppTools::networkSecurityDiagnostics() const
         && cacheIsolationSelfTest
         && contextHeaderIsolationSelfTest;
 
+    const bool jsonMediaTypeSelfTest =
+        SailVaultNetwork::isJsonMediaType(QByteArray("application/json"))
+        && SailVaultNetwork::isJsonMediaType(
+            QByteArray("application/json; charset=utf-8"))
+        && SailVaultNetwork::isJsonMediaType(
+            QByteArray("application/problem+json"))
+        && !SailVaultNetwork::isJsonMediaType(QByteArray("text/html"))
+        && !SailVaultNetwork::isJsonMediaType(QByteArray());
+
+    const bool plainTextMediaTypeSelfTest =
+        SailVaultNetwork::isPlainTextMediaType(QByteArray("text/plain"))
+        && SailVaultNetwork::isPlainTextMediaType(
+            QByteArray("text/plain; charset=utf-8"))
+        && !SailVaultNetwork::isPlainTextMediaType(
+            QByteArray("application/json"));
+
+    QJsonObject rpcResultProbe;
+    rpcResultProbe.insert(QStringLiteral("jsonrpc"), QStringLiteral("2.0"));
+    rpcResultProbe.insert(QStringLiteral("id"), 1);
+    rpcResultProbe.insert(QStringLiteral("result"), QStringLiteral("ok"));
+
+    QJsonObject rpcStringIdProbe;
+    rpcStringIdProbe.insert(QStringLiteral("jsonrpc"), QStringLiteral("2.0"));
+    rpcStringIdProbe.insert(QStringLiteral("id"), QStringLiteral("spl"));
+    rpcStringIdProbe.insert(QStringLiteral("result"), QJsonObject());
+
+    QJsonObject rpcWrongIdProbe = rpcResultProbe;
+    rpcWrongIdProbe.insert(QStringLiteral("id"), 2);
+
+    QJsonObject rpcWrongVersionProbe = rpcResultProbe;
+    rpcWrongVersionProbe.insert(QStringLiteral("jsonrpc"), QStringLiteral("1.0"));
+
+    QJsonObject rpcAmbiguousProbe = rpcResultProbe;
+    QJsonObject rpcErrorObject;
+    rpcErrorObject.insert(QStringLiteral("code"), -32000);
+    rpcErrorObject.insert(QStringLiteral("message"), QStringLiteral("test"));
+    rpcAmbiguousProbe.insert(QStringLiteral("error"), rpcErrorObject);
+
+    QString rpcDetail;
+    const bool jsonRpcEnvelopeSelfTest =
+        SailVaultNetwork::validateJsonRpcEnvelope(
+            rpcResultProbe, QJsonValue(1), &rpcDetail)
+        && SailVaultNetwork::validateJsonRpcEnvelope(
+            rpcStringIdProbe, QJsonValue(QStringLiteral("spl")), &rpcDetail)
+        && !SailVaultNetwork::validateJsonRpcEnvelope(
+            rpcWrongIdProbe, QJsonValue(1), &rpcDetail)
+        && !SailVaultNetwork::validateJsonRpcEnvelope(
+            rpcWrongVersionProbe, QJsonValue(1), &rpcDetail)
+        && !SailVaultNetwork::validateJsonRpcEnvelope(
+            rpcAmbiguousProbe, QJsonValue(1), &rpcDetail);
+
+    const bool providerResponsePolicySelfTest =
+        jsonMediaTypeSelfTest
+        && plainTextMediaTypeSelfTest
+        && jsonRpcEnvelopeSelfTest;
+
     QVariantMap result;
     result.insert(QStringLiteral("endpointCount"), endpointCount);
     result.insert(QStringLiteral("validEndpointCount"), validEndpoints);
@@ -164,19 +221,29 @@ QVariantMap AppTools::networkSecurityDiagnostics() const
                   cacheIsolationSelfTest);
     result.insert(QStringLiteral("contextHeaderIsolationPassed"),
                   contextHeaderIsolationSelfTest);
+    result.insert(QStringLiteral("jsonMediaTypePolicyPassed"),
+                  jsonMediaTypeSelfTest && plainTextMediaTypeSelfTest);
+    result.insert(QStringLiteral("jsonRpcEnvelopePolicyPassed"),
+                  jsonRpcEnvelopeSelfTest);
+    result.insert(QStringLiteral("providerResponsePolicyPassed"),
+                  providerResponsePolicySelfTest);
     result.insert(QStringLiteral("networkBoundaryPassed"),
                   endpointPolicyPassed && policySelfTest
                   && redirectPolicySelfTest
-                  && requestStatePolicySelfTest);
+                  && requestStatePolicySelfTest
+                  && providerResponsePolicySelfTest);
     result.insert(QStringLiteral("redirectsBlocked"), redirectPolicySelfTest);
     result.insert(QStringLiteral("responseLimitBytes"),
                   static_cast<qlonglong>(SailVaultNetwork::DefaultMaxResponseBytes));
     result.insert(QStringLiteral("responseLimitText"),
                   SailVaultNetwork::responseLimitText());
     result.insert(QStringLiteral("detail"),
-                  QStringLiteral("%1/%2 endpoints pass HTTPS policy · requests stateless=%3")
+                  QStringLiteral("%1/%2 endpoints pass HTTPS policy · stateless=%3 · responses validated=%4")
                       .arg(validEndpoints).arg(endpointCount)
                       .arg(requestStatePolicySelfTest
+                           ? QStringLiteral("yes")
+                           : QStringLiteral("no"))
+                      .arg(providerResponsePolicySelfTest
                            ? QStringLiteral("yes")
                            : QStringLiteral("no")));
     return result;

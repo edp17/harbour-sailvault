@@ -53,7 +53,7 @@ patch_cmake() {
             compiler++
             print "if (NOT (\"${CMAKE_CXX_COMPILER_ID}\" MATCHES \"Clang\"))"
             print "    if (SAILVAULT_ALLOW_GNU AND \"${CMAKE_CXX_COMPILER_ID}\" STREQUAL \"GNU\")"
-            print "        message(WARNING \"SailVault: checked GNU/C++17 compatibility build of Wallet Core 4.8.3\")"
+            print "        message(WARNING \"SailVault: checked GNU/C++17 compatibility build of Wallet Core 4.8.4\")"
             print "    else ()"
             print "        message(FATAL_ERROR \"You should use clang compiler\")"
             print "    endif ()"
@@ -354,7 +354,7 @@ patch_cpp20_surface() {
         '        return static_cast<uint8_t>(std::countl_zero(hi));' \
         '        return static_cast<uint8_t>(__builtin_clzll(hi));'
 
-    # Wallet Core 4.8.3 has several production translation units that use
+    # Wallet Core 4.8.4 has several production translation units that use
     # standard exception classes without directly including <stdexcept>.
     # Clang's transitive include graph tolerated these upstream; Sailfish's
     # GNU 10 / libstdc++ build does not. Make those dependencies explicit.
@@ -374,7 +374,7 @@ patch_cpp20_surface() {
     replace_exact_line "$src" '#include <unordered_set>' $'#include <stdexcept>\n#include <unordered_set>'
 
     # GCC 10 does not find chrono conversion helpers through unqualified lookup.
-    # Wallet Core 4.8.3 has two production uses of unqualified duration_cast;
+    # Wallet Core 4.8.4 has two production uses of unqualified duration_cast;
     # qualify both explicitly to match the standard API.
     src="$ROOT/src/MultiversX/TransactionFactoryConfig.cpp"
     replace_exact_line "$src" \
@@ -386,14 +386,14 @@ patch_cpp20_surface() {
         '    const uint64_t now = duration_cast<std::chrono::milliseconds>(' \
         '    const uint64_t now = std::chrono::duration_cast<std::chrono::milliseconds>('
 
-    echo "Patched Wallet Core 4.8.3 C++20/stdlib production surface for Sailfish C++17"
+    echo "Patched Wallet Core 4.8.4 C++20/stdlib production surface for Sailfish C++17"
 }
 
 patch_rust_175_stdlib_surface() {
     local src
 
     # Rust 1.75 predates the integer `is_multiple_of()` convenience method
-    # used by Wallet Core 4.8.3. Keep the arithmetic equivalent explicit so
+    # used by Wallet Core 4.8.4. Keep the arithmetic equivalent explicit so
     # the source remains compatible with Sailfish's packaged compiler.
     src="$ROOT/rust/tw_encoding/src/hex.rs"
     replace_exact_line "$src" \
@@ -406,7 +406,7 @@ patch_rust_175_stdlib_surface() {
         '    if bits % 8 != 0 || bits == 0 || bits > 256 {'
 
     # These TON SDK crates are outside SailVault's feature set, but patch
-    # them too so the vendored 4.8.3 tree itself is Rust-1.75 compatible if the
+    # them too so the vendored 4.8.4 tree itself is Rust-1.75 compatible if the
     # feature scope is widened later.
     src="$ROOT/rust/frameworks/tw_ton_sdk/src/cell/level_mask.rs"
     replace_exact_line "$src" \
@@ -418,7 +418,7 @@ patch_rust_175_stdlib_surface() {
         '        let high_word_bits = if bit_len.is_multiple_of(32) {' \
         '        let high_word_bits = if bit_len % 32 == 0 {'
 
-    echo "Patched Wallet Core 4.8.3 post-Rust-1.75 integer APIs"
+    echo "Patched Wallet Core 4.8.4 post-Rust-1.75 integer APIs"
 }
 
 patch_rust_registry_for_sailvault() {
@@ -535,7 +535,7 @@ pub fn evm_dispatcher(coin: CoinType) -> RegistryResult<EvmEntryExtStaticRef> {
 }
 RUSTEOF
 
-    # Cargo 1.75 cannot parse upstream lockfile v4. Wallet Core 4.8.3 has only
+    # Cargo 1.75 cannot parse upstream lockfile v4. Wallet Core 4.8.4 has only
     # one git SourceId and it has no URL-encoded branch data, so v3 is
     # semantically sufficient. Also update tw_coin_registry's resolved edge
     # list to match the deliberately reduced manifest above; stale unreachable
@@ -646,4 +646,4 @@ patch_rust_175_stdlib_surface
 patch_rust_registry_for_sailvault
 patch_codegen_v2_for_rust_175
 
-echo "Wallet Core 4.8.3 Sailfish/GNU/Rust-1.75 compatibility adjustments applied successfully."
+echo "Wallet Core 4.8.4 Sailfish/GNU/Rust-1.75 compatibility adjustments applied successfully."

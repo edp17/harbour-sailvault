@@ -25,6 +25,7 @@ int schemaVersion();
 QVariantMap diagnostics();
 QVariantMap privacyDiagnostics();
 bool runPersistenceProbe(QString *detail = nullptr);
+bool runStorageLifecycleProbe(QString *detail = nullptr);
 bool clearCachedPublicData(QString *detail = nullptr);
 bool clearQuarantinedSettingsData(QString *detail = nullptr);
 } // namespace SailVaultSettings

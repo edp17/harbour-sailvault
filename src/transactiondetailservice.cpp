@@ -142,7 +142,7 @@ QString TransactionDetailService::normalizeBaseUrl(const QString &url)
 
 QString TransactionDetailService::networkErrorText(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(reply);
+    return SailVaultNetwork::jsonErrorText(reply);
 }
 
 QString TransactionDetailService::addressHash(const QJsonValue &value)
@@ -805,6 +805,12 @@ void TransactionDetailService::loadSolana(const QString &signature,
         }
 
         const QJsonObject root = document.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                root, QJsonValue(1), &rpcEnvelopeError)) {
+            fail(rpcEnvelopeError, generation);
+            return;
+        }
 
         if (root.contains(QStringLiteral("error"))) {
             const QJsonObject error =

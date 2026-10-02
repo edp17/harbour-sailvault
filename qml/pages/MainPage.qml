@@ -414,14 +414,14 @@ Page {
                             width: parent.width
                             text: "Ethereum"
                             color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.ethereumBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {
@@ -474,14 +474,14 @@ Page {
                             width: parent.width
                             text: "Bitcoin"
                             color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.bitcoinBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {
@@ -517,7 +517,7 @@ Page {
                     height: solColumn.height + 2 * Theme.paddingLarge
                     onClicked: pageStack.push(Qt.resolvedUrl("ChainPage.qml"), {
                         chainName: "Solana",
-                        chainSubtitle: "Solana mainnet · Wallet Core 4.8.3 Sailfish baseline",
+                        chainSubtitle: "Solana mainnet · Wallet Core " + appTools.walletCoreVersion + " Sailfish baseline",
                         address: vault.solanaAddress,
                         balance: portfolio.solanaBalance,
                         vault: vault,
@@ -534,14 +534,14 @@ Page {
                             width: parent.width
                             text: "Solana"
                             color: Theme.highlightColor
-                            font.pixelSize: Theme.fontSizeLarge
+                            font.pixelSize: Theme.fontSizeMedium
                         }
 
                         Label {
                             width: parent.width
                             text: portfolio.solanaBalance
                             color: Theme.primaryColor
-                            font.pixelSize: Theme.fontSizeMedium
+                            font.pixelSize: Theme.fontSizeLarge
                         }
 
                         Label {
@@ -666,8 +666,8 @@ Page {
                 x: Theme.horizontalPageMargin
                 width: parent.width - 2 * Theme.horizontalPageMargin
                 text: "Read-only development build. Only the public BIP39 test wallet is accepted. "
-                      + "No transaction construction or broadcasting is available. "
-                      + "Do not send real funds to these addresses."
+                      + "Unsigned transfer intent can be reviewed locally, but chain transaction construction, "
+                      + "signing and broadcasting remain unavailable. Do not send real funds to these addresses."
                 color: Theme.secondaryColor
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.Wrap

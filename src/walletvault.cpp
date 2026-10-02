@@ -539,6 +539,104 @@ WalletVault::deriveAndCheck(const QByteArray &mnemonic) const
     return result;
 }
 
+bool WalletVault::withVerifiedDevelopmentEthereumKey(
+        const std::function<bool(TWPrivateKey *, QString *)> &operation,
+        QString *errorMessage)
+{
+    const auto fail = [errorMessage](const QString &message) {
+        if (errorMessage)
+            *errorMessage = message;
+        return false;
+    };
+
+    if (!m_walletLoaded) {
+        return fail(QStringLiteral(
+            "Development signing requires the public test wallet to be loaded in the active session."));
+    }
+    if (!operation)
+        return fail(QStringLiteral("Development signing callback is unavailable."));
+
+    QByteArray mnemonic;
+    QString fetchError;
+    const SecretFetchState fetched = fetchMnemonic(&mnemonic, &fetchError);
+    if (fetched != SecretFetchState::Present) {
+        secureErase(&mnemonic);
+        if (fetched == SecretFetchState::Missing) {
+            return fail(QStringLiteral(
+                "The secure public development wallet is no longer stored."));
+        }
+        return fail(fetchError.isEmpty()
+            ? QStringLiteral("Sailfish Secrets could not provide the development wallet.")
+            : fetchError);
+    }
+
+    const DerivedWallet verified = deriveAndCheck(mnemonic);
+    if (!verified.ok) {
+        secureErase(&mnemonic);
+        return fail(verified.error);
+    }
+
+    // Bind the current public session to the just-revalidated secret before a
+    // signing callback can see a Wallet Core handle. A stale/changed session
+    // therefore cannot silently reuse a previously loaded UI state.
+    if (m_ethereumAddress != verified.ethereumAddress
+            || m_bitcoinAddress != verified.bitcoinAddress
+            || m_solanaAddress != verified.solanaAddress) {
+        secureErase(&mnemonic);
+        return fail(QStringLiteral(
+            "The loaded public session no longer matches the revalidated development wallet."));
+    }
+
+    bool operationPassed = false;
+    QString operationError;
+    {
+        TWStringGuard mnemonicString(
+            TWStringCreateWithUTF8Bytes(mnemonic.constData()));
+        TWStringGuard passphrase(TWStringCreateWithUTF8Bytes(""));
+        if (!mnemonicString.get() || !passphrase.get()) {
+            secureErase(&mnemonic);
+            return fail(QStringLiteral(
+                "Wallet Core could not create the transient development-wallet strings."));
+        }
+
+        TWHDWalletGuard wallet(
+            TWHDWalletCreateWithMnemonic(mnemonicString.get(), passphrase.get()));
+        if (!wallet.get()) {
+            secureErase(&mnemonic);
+            return fail(QStringLiteral(
+                "Wallet Core rejected the revalidated development wallet."));
+        }
+
+        TWPrivateKeyGuard ethereumKey(
+            TWHDWalletGetKeyForCoin(wallet.get(), TWCoinTypeEthereum));
+        if (!ethereumKey.get()) {
+            secureErase(&mnemonic);
+            return fail(QStringLiteral(
+                "Wallet Core could not derive the transient Ethereum development key."));
+        }
+
+        try {
+            operationPassed = operation(ethereumKey.get(), &operationError);
+        } catch (...) {
+            operationPassed = false;
+            operationError = QStringLiteral(
+                "Development signing callback raised an unexpected exception.");
+        }
+    }
+
+    secureErase(&mnemonic);
+
+    if (!operationPassed) {
+        return fail(operationError.isEmpty()
+            ? QStringLiteral("Development signing callback failed.")
+            : operationError);
+    }
+
+    if (errorMessage)
+        errorMessage->clear();
+    return true;
+}
+
 bool WalletVault::storeDevelopmentMnemonic(const QByteArray &mnemonic,
                                                  const QString &successStatus,
                                                  QString *errorMessage)

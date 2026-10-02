@@ -36,7 +36,7 @@ No diagnostic result contains mnemonic, seed or private-key bytes. CryptoBox tes
 
 ## 4.8.4 disposition
 
-Wallet Core 4.8.4 was released on 2026-09-24. Its published change is a Robinhood Chain block-explorer switch. That does not affect SailVault's BTC/ETH/SOL cryptographic surface, so M41 retains the M40r9-proven 4.8.3 baseline. A future Wallet Core upgrade should repeat the same compatibility and security gates.
+Wallet Core 4.8.4 was released on 2026-09-24. Its published change is a Robinhood Chain block-explorer switch. M41 therefore retained the then-proven 4.8.3 baseline. M45 performs the planned follow-up upgrade to 4.8.4 and repeats the same compatibility/security gate on-device.
 
 ## Real-funds gate
 

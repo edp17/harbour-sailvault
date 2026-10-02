@@ -139,7 +139,7 @@ QString TokenService::normalizeBaseUrl(const QString &url)
 
 QString TokenService::networkErrorText(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(reply);
+    return SailVaultNetwork::jsonErrorText(reply);
 }
 
 bool TokenService::isZeroInteger(const QString &value)
@@ -609,6 +609,15 @@ void TokenService::refreshSolanaProgram(const QString &address,
         }
 
         const QJsonObject object = doc.object();
+        QString rpcEnvelopeError;
+        if (!SailVaultNetwork::validateJsonRpcEnvelope(
+                object, QJsonValue(standard), &rpcEnvelopeError)) {
+            finishSolanaRequest(
+                false,
+                QStringLiteral("%1: %2").arg(standard, rpcEnvelopeError),
+                generation);
+            return;
+        }
 
         if (object.contains(QStringLiteral("error"))) {
             const QJsonObject error =

@@ -1,5 +1,126 @@
 # Changelog
 
+## 0.52.0-1 — Milestone 52 — development signing boundary
+
+- Add the first Sailfish Secrets → Wallet Core transaction signing boundary while keeping production signing and all broadcasting disabled.
+- Restrict live signing to the published BIP39 development wallet with independent ETH/BTC/SOL address gates in both WalletVault and the signing service.
+- Add a private C++-only WalletVault callback that reopens Sailfish Secrets, revalidates the stored wallet and exposes only a transient `TWHDWallet*`; mnemonic bytes never enter QML.
+- Add C++ revalidation of the complete M49 signing snapshot: reviewed intent, EIP-1559 payload reconstruction, Wallet Core Keccak-256 hash and construction fingerprint must all match.
+- Enforce a two-minute maximum age for the M49 construction before the development sign/verify action can run.
+- Derive the Ethereum key inside Wallet Core, create a 65-byte recoverable secp256k1 signature and immediately verify it against the derived public key.
+- Never call `TWPrivateKeyData`; no private-key bytes are exported.
+- Keep the raw signature out of QML: hash it into a SHA-256 proof fingerprint and wipe the temporary signature buffer after verification.
+- Add Developer diagnostics and Release-readiness gating for published-wallet identity, sign/verify, mutated-digest rejection and non-exporting signature-proof binding.
+- Preserve the proven M49 Ethereum, M50 Bitcoin and M51r2 Solana unsigned constructors; Bitcoin/Solana signing remain disconnected.
+- Keep signed-transaction assembly, production signing policy/user confirmation and all broadcast APIs unavailable.
+
+## 0.51.0-1 — Milestone 51 — Solana unsigned construction
+
+### M51r2 device-test correction
+
+- Correct the Solana mainnet genesis hash constant from the invalid M51r1 value ending `...dw2dM` to the actual mainnet `getGenesisHash` value ending `...dw2N9d`.
+- Update the deterministic construction fingerprint vector and all preflight/review/device-check documentation to bind the corrected network identity.
+- Keep the Wallet Core pre-signing message, Ethereum/Bitcoin constructors, Sailfish Secrets boundary and signing/broadcast-disabled architecture unchanged.
+
+- Complete unsigned native-chain construction by adding reviewed native-SOL transfer construction while signing and broadcasting remain disabled.
+- Revalidate the complete M48 intent fingerprint before any Solana construction network request.
+- Require source, destination and recent blockhash to decode to exactly 32 bytes through Wallet Core Base58.
+- Require the configured RPC to return the exact Solana mainnet genesis hash before trusting construction data.
+- Fetch a finalized recent blockhash and preserve its last-valid-block-height horizon in the construction snapshot.
+- Convert SOL to lamports using exact integer/string arithmetic with no floating-point transaction amount path.
+- Use Wallet Core `TWTransactionCompilerPreImageHashes` without a private key to construct the canonical native-SOL transfer signing message.
+- Require Wallet Core's returned signer to exactly match the reviewed source address.
+- Query `getFeeForMessage` for the exact public signing message with a defensive 0.1 SOL fee ceiling.
+- Expose Base64/hex signing-message data plus an explicitly non-broadcastable zero-signature transaction template.
+- Add a SHA-256 construction fingerprint binding reviewed intent, mainnet identity, blockhash validity horizon, fee quote and message.
+- Add deterministic network-free diagnostics pinned to Wallet Core's published Solana external-signing transfer vector and independent template/fingerprint constants.
+- Preserve M49 Ethereum construction, M50 Bitcoin construction and the proven Wallet Core 4.8.4 / Sailfish Secrets / network-security boundary.
+- Keep private-key access, signing, broadcasting, SPL/Token-2022 construction and real-funds use unavailable.
+
+## 0.50.0-1 — Milestone 50 — Bitcoin unsigned construction
+
+- Add reviewed Bitcoin unsigned transaction construction while keeping signing and broadcasting disabled.
+- Revalidate the complete M48 intent fingerprint before network access and independently verify Bitcoin mainnet genesis.
+- Query only the public BIP84 source address for confirmed UTXOs; destination and transfer amount remain local.
+- Add exact BTC-to-satoshi conversion, deterministic largest-first UTXO selection and a conservative integer sat/vB fee-rate ceiling.
+- Add conservative P2WPKH vbyte estimation, 546 sat dust floor, RBF sequence and bounded input/UTXO policy.
+- Serialize a deterministic version-2 unsigned Bitcoin transaction and compute its SHA256d transaction ID through Wallet Core.
+- Produce an incomplete PSBT v0 with witness UTXO + SIGHASH_ALL metadata, but no keys, signatures or finalization.
+- Add a SHA-256 construction fingerprint binding reviewed intent, unsigned transaction and PSBT.
+- Add network-free deterministic Bitcoin diagnostics using synthetic public UTXOs and published BIP84 addresses.
+- Keep the live public development address unfunded; its expected zero-UTXO result is a valid safety-path test.
+- Preserve M49 Ethereum construction and the proven Wallet Core 4.8.4 / Sailfish Secrets / provider-security boundary.
+- Keep Solana construction, dedicated secure Bitcoin change derivation, signing and broadcasting unavailable.
+
+## 0.49.0-1 — Milestone 49 — Ethereum unsigned construction
+
+- Add the first chain-specific construction path while keeping signing and broadcasting disabled.
+- Revalidate the complete M48 reviewed intent and SHA-256 fingerprint before any construction network request.
+- Add explicit hardened Ethereum RPC retrieval for chain ID, pending nonce, latest EIP-1559 base fee/block gas limit, priority fee and destination code.
+- Require Ethereum mainnet chain ID 1 and refuse contract/delegated-code recipients; M49 supports plain EOA native-ETH transfers only.
+- Keep the transfer amount local to the device during construction and use the fixed 21,000 gas limit only after the EOA check.
+- Add exact decimal ETH-to-wei conversion and deterministic EIP-1559 type-2 RLP signing-payload construction.
+- Compute the signing hash through Wallet Core `TWHashKeccak256`; no signing API is called.
+- Add a SHA-256 construction fingerprint binding the M48 intent fingerprint to the exact unsigned payload.
+- Extend Developer diagnostics and Release readiness with deterministic quantity/wei/RLP/Keccak/binding self-tests.
+- Preserve WalletVault/Sailfish Secrets, Wallet Core 4.8.4 compatibility scripts and the existing provider security boundary; keep Bitcoin/Solana construction unavailable.
+
+## 0.48.0-1 — Milestone 48 — unsigned transaction intent review
+
+- Begin the transaction phase without enabling chain transaction construction, signing or broadcasting.
+- Add `UnsignedTransactionService`, a common ETH/BTC/SOL native transfer-intent model.
+- Validate source/destination addresses with Wallet Core and enforce 18/8/9-decimal ETH/BTC/SOL amount precision with exact string parsing.
+- Add advisory displayed-balance/funding warnings while explicitly leaving network-fee reservation to later construction milestones.
+- Add a versioned immutable review snapshot with a SHA-256 fingerprint binding chain, network, source, destination, normalized amount and symbol.
+- Add **Prepare transfer** to unlocked development-wallet chain pages only; Watch-only and Address-book public pages remain non-sending.
+- Add chain-aware address-book destination shortcuts and human-readable unsigned review UI.
+- Add local M48 diagnostics and Release-readiness gating for chain metadata, Wallet Core address checks, decimal parsing and fingerprint mutation.
+- Preserve Wallet Core 4.8.4, WalletVault/Sailfish Secrets, storage/session security and M42-M44 provider policy unchanged.
+- Keep nonce/UTXO/blockhash lookup, serialized transaction construction, user signing and broadcasting unavailable.
+
+## 0.47.0-1 — Milestone 47 — storage lifecycle validation
+
+- Advance the non-sensitive settings schema from v4 to v5 and add explicit profile lineage: fresh/existing/legacy-import origin, earliest tracked app version, and last upgrade source/time.
+- Keep the install UUID internal; QML receives only whether an install identity is present.
+- Refactor startup metadata handling so the same logic can be exercised against isolated temporary profiles.
+- Add local lifecycle simulations for fresh initialization, upgrade preservation and legacy-known-key import/sanitisation.
+- Preserve install identity, first-start metadata and representative user preferences across the simulated upgrade path.
+- Gate Release readiness on real INI persistence, lifecycle simulation and coherent current-profile metadata.
+- Extend Developer diagnostics with storage lifecycle status and profile lineage.
+- Update the read-only beta regression documentation for the Wallet Core 4.8.4 baseline.
+- Preserve Wallet Core 4.8.4, Sailfish Secrets/session security, M42-M44 provider policy and M46 UI behaviour.
+- Keep transaction construction, user signing and broadcasting unavailable.
+
+## 0.46.0-1 — Milestone 46 — Sailfish UI consistency
+
+- Complete the deferred systematic typography and information-hierarchy pass using Sailfish `Theme.fontSize*` tiers only.
+- Align stored-wallet and Watch-only chain rows: Medium chain titles, Large primary balances, Small fiat values and ExtraSmall address/freshness metadata.
+- Reduce secondary Watch-only, transaction-summary and diagnostic headlines that previously competed with page headers or hero values.
+- Remove the redundant Receive-page “Offline address QR” heading; the PageHeader remains the single page title.
+- Replace the two Developer-diagnostics rerun buttons with one Sailfish-native pulley action that refreshes storage, network-boundary and Wallet Core diagnostics together.
+- Extend preflight with a QML typography/UI contract that rejects literal font sizes and guards the consolidated diagnostics interaction.
+- Preserve Wallet Core 4.8.4, Sailfish Secrets/session security and M42-M44 provider policy unchanged.
+- Keep transaction construction, user signing and broadcasting unavailable.
+
+## 0.45.0-1 — Milestone 45 — Wallet Core 4.8.4 validation
+
+- Advance the Wallet Core candidate baseline from device-proven 4.8.3 to upstream 4.8.4.
+- Pin source preparation to immutable upstream commit `d40d24a63d92619167903369308bf0e2f7eb3a59` rather than a mutable tag URL.
+- Verify the 4.8.4-specific Robinhood registry marker before applying SailVault's compatibility layer.
+- Preserve the complete M40/M41 Rust 1.75, GNU/C++17, protobuf 3.20.3, canonical derivation ABI and Rust/C++ codegen-v2 compatibility path.
+- Keep the M41 cryptographic/ABI probe implementation unchanged so the upgraded baseline must pass the identical acceptance gate.
+- Preserve M42-M44 provider transport/privacy/protocol controls and all existing read-only functionality.
+- Keep transaction construction, user signing and broadcasting unavailable.
+
+## 0.44.0-1 — Milestone 44 — provider response validation
+
+- Add strict provider media-type validation before parsing: JSON APIs must return a JSON media type and the Bitcoin genesis scalar must return `text/plain`.
+- Add a shared JSON-RPC 2.0 envelope validator requiring the exact request ID and exactly one of `result` or object-valued `error`.
+- Apply JSON-RPC envelope validation to all ten RPC response paths, including numeric and string IDs.
+- Extend local network diagnostics and Release readiness with provider-response policy checks.
+- Preserve M42 HTTPS/redirect/response-size controls and M43 stateless cookie/auth/cache/context isolation.
+- Preserve the proven Wallet Core 4.8.3 / M41 security-validation baseline unchanged; no transaction construction, signing or broadcasting is added.
+
 ## 0.43.0-1 — Milestone 43 — stateless provider privacy
 
 - Preserve the proven M41 Wallet Core 4.8.3 security/ABI baseline and M42 network boundary.

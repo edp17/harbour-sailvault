@@ -1,4 +1,4 @@
-# Reproduce Wallet Core 4.8.3 protobuf-plugin/c_typedef.cc without libprotoc.
+# Reproduce Wallet Core 4.8.4 protobuf-plugin/c_typedef.cc without libprotoc.
 # Emits typedefs for top-level messages only.
 function sanitize(s,    out,i,c,n,nextc) {
     out=""

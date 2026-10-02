@@ -247,7 +247,7 @@ QString PriceService::pairFor(const QString &asset, const QString &currency)
 
 QString PriceService::networkErrorText(QNetworkReply *reply)
 {
-    return SailVaultNetwork::errorText(reply);
+    return SailVaultNetwork::jsonErrorText(reply);
 }
 
 void PriceService::refresh()
